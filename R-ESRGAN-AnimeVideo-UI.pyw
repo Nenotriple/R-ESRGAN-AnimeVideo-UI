@@ -132,7 +132,7 @@ class Application(tk.Frame):
 #         #
 
         self.menubar = tk.Menu(self.master)
-        self.master(menu=self.menubar)
+        self.master.config(menu=self.menubar)
 
         self.fileMenu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="File", menu=self.fileMenu)
@@ -297,7 +297,6 @@ class Application(tk.Frame):
         tenth_frame_time = 20 / float(self.frame_rate)
         result = subprocess.run(["./ffmpeg.exe", "-ss", str(tenth_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         img = Image.open(io.BytesIO(result.stdout))
-
         max_size = (512, 512)
         aspect_ratio = img.width / img.height
         if aspect_ratio > 1:
@@ -375,63 +374,53 @@ class Application(tk.Frame):
             self.menubar.entryconfig("Batch Upscale", state="normal")
 
     def _merge_frames(self):
-        def _get_source_frame_rate():
-            command = ["ffprobe", "-v", "0", "-of", "compact=p=0:nk=1", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", self.video_file]
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            output, _ = process.communicate()
-            num, denom = map(int, output.strip().split('/'))
-            return num / denom
         try:
             self.start_timer()
-            self.update_timer()
             self._disable_buttons()
             self.menubar.entryconfig("Batch Upscale", state="disabled")
-            self.source_frame_rate = _get_source_frame_rate()
+            command = ["ffprobe", "-v", "0", "-of", "compact=p=0:nk=1", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", self.video_file]
+            output, _ = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).communicate()
+            num, denom = map(int, output.strip().split('/'))
+            self.source_frame_rate = num / denom
             output_file_name = os.path.splitext(os.path.basename(self.video_file))[0] + "_UPSCALE" + self.file_extension
             output_file_path = os.path.join(os.path.dirname(self.video_file), output_file_name)    
-            if os.path.exists(output_file_path):
+            self.stop_timer()
+            root = tk.Tk()
+            root.withdraw()
+            if os.path.exists(output_file_path) and messagebox.askquestion("Warning!", "File exists. Overwrite?", icon='warning') != 'yes':
+                self.operation_label["text"] = "Operation canceled."
+                self._enable_buttons()
                 self.stop_timer()
-                root = tk.Tk()
-                root.withdraw()
-                result = messagebox.askquestion("Warning!", "File already exists. Overwrite?", icon='warning')
-                if result == 'no':
-                    self.operation_label["text"] = "Operation canceled."
-                    self.select_button.config(state='normal')
-                    self.merge_button.config(state='normal')
-                    self.keep_raw_check.config(state='normal')
-                    self.keep_upscaled_check.config(state='normal')
-                    self.stop_timer()
-                    self.timer_label["text"] = ""
-                    return
-            codec = 'h264_nvenc' if self.file_extension == '.mp4' else 'copy'
-            if not self._is_codec_available(codec):
-                codec = 'libx264' if self.file_extension == '.mp4' else 'copy'
+                return
             audio_file = "audio.wav"
-            command = ["./ffmpeg.exe", "-i", self.video_file, "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", audio_file]
-            subprocess.call(command)
-            command = ["./ffmpeg.exe", "-hwaccel", "cuda", "-y", "-r", str(self.frame_rate), "-i", "upscaled_frames/frame%08d.jpg",
+            command1 = ["./ffmpeg.exe", "-i", self.video_file, "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2", audio_file]
+            command2 = ["./ffmpeg.exe", "-y", "-r", str(self.frame_rate), "-i", "upscaled_frames/frame%08d.jpg",
                        "-i", audio_file,
-                       "-c:v", codec,
+                       "-c:v", 'libx264',
                        "-c:a", "aac",
-                       "-vsync", "2",
+                       "-vsync", "0",
                        "-map", "0:v:0",
                        "-map", "1:a:0",
                        "-pix_fmt","yuv420p",
+                       "-crf","18",
                        output_file_path]
-            self.start_timer()
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-            for line in iter(process.stdout.readline, ""):
-                line = line.replace("time=", "").replace("dup=", "").replace("drop=", "")
-                self.console_output_label["text"] = line.strip()
-            process.stdout.close()
-            process.wait()
+            for command in [command1, command2]:
+                process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+                for line in iter(process.stdout.readline, ""):
+                    self.console_output_label["text"] = line.replace("time=", "").replace("dup=", "").replace("drop=", "").strip()
+                process.stdout.close()
+                process.wait()
             if os.path.exists(audio_file):
                 os.remove(audio_file)
-            if self.keep_upscaled_var.get() == 0:
+            if not self.keep_upscaled_var.get():
                 for file in os.listdir("upscaled_frames"):
-                    os.remove(os.path.join("upscaled_frames", file))
+                    os.remove(os.path.join("upscaled_frames", file))           
             self.operation_label["text"] = "Done Merging!"
             self.console_output_label["text"] = ""
+        except AttributeError as e:
+            self.stop_timer()
+            self.console_output_label["text"] = "No video_file"
+        finally:
             self.stop_timer()
             self._enable_buttons()
             self.extract_button.config(state='disabled')
@@ -439,13 +428,6 @@ class Application(tk.Frame):
             self.upscale_button.config(state='disabled')
             self.menubar.entryconfig("Options", state="disabled")
             self.menubar.entryconfig("Batch Upscale", state="normal")
-        except AttributeError as e:
-            self.stop_timer()
-            self.console_output_label["text"] = "no attribute: video_file"
-            self.operation_label["text"] = ""
-            self.select_button.config(state='normal')
-        except Exception as e:
-           pass
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
