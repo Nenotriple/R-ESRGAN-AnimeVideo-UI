@@ -658,14 +658,16 @@ class reav_ui(tk.Frame):
                 self.process.kill()
                 self.process.communicate()
         if not self.keep_raw_var.get():
-            for file in os.listdir("raw_frames"):
-                if os.path.isfile(os.path.join("raw_frames", file)):
-                    os.remove(os.path.join("raw_frames", file))
+            if os.path.exists("raw_frames"):
+                for file in os.listdir("raw_frames"):
+                    if os.path.isfile(os.path.join("raw_frames", file)):
+                        os.remove(os.path.join("raw_frames", file))
         if not self.keep_upscaled_var.get():
-            for file in os.listdir("upscaled_frames"):
-                if os.path.isfile(os.path.join("upscaled_frames", file)):
-                    os.remove(os.path.join("upscaled_frames", file))
-        root.destroy()      
+            if os.path.exists("upscaled_frames"):
+                for file in os.listdir("upscaled_frames"):
+                    if os.path.isfile(os.path.join("upscaled_frames", file)):
+                        os.remove(os.path.join("upscaled_frames", file))
+        root.destroy()
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
