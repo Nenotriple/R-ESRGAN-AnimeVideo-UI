@@ -9,7 +9,7 @@
   <img src="https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/assets/70049990/79130cc1-68b9-4976-9da6-9f8795b045d5)" alt="reav-ui app_sample">
 </p>
 
-## Usage 📝
+## 📝 Usage
 
 - Run the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
 -  Select a video file that you want to upscale.
@@ -19,9 +19,9 @@
 
 After upscaling, you have the option to scale the frames back down to their original size.
 
-Currently only mp4, avi, mkv, are supported.
+mp4, gif, avi, mkv, webm, mov, m4v, wmv, are supported.
 
-## Why? 🤷
+## 🤷 Why?
 
 Why use this over an application like [Chainner](https://github.com/chaiNNer-org/chaiNNer), or [Topaz Video AI](https://www.topazlabs.com/)?
 
@@ -34,16 +34,36 @@ Other upscale models are popular, but [realesr-animevideov3](https://github.com/
 
 Check out these [upscale comparisons](https://github.com/xinntao/Real-ESRGAN/blob/master/docs/anime_video_model.md).
 
-## Requirements 🚩
+## 🚩 Requirements
 
 **Running the script will automatically fulfill all requirements.**
 
 The `pillow` library will be downloaded and installed (if not already available) upon first launch.
 
-`ffmpeg` and `ffprobe` are included in the package and will be extracted upon first launch.
+`ffmpeg` and `ffprobe` will be downloaded upon first launch.
 
-## **Credits** 👥
+`realesrgan-ncnn-vulkan-20220424-windows.zip` will be downloaded upon first launch.
 
-ffmpeg - https://ffmpeg.org/
 
-Real-ESRGAN - https://github.com/xinntao/Real-ESRGAN
+## 📜 Version History
+
+v1.05 changes:
+
+- _**New:**_
+    - *All requirements are now downloaded upon launch instead of packaged together with the script.*
+    - *Upscale Image. Upscales single image, saves with "_UP" appended to filename, opens in default image viewer when complete.*
+    - *Added support for: gif, webm, mov, m4v, wmv.*
+- _**Fixed:**_
+    - *Audio is now directly copied from source, not re-encoded. This improves quality and speeds up the merging process.*
+    - *an error when a subfolder was present in either "raw_frames" or "upscaled_frames" when closing the application.*
+    - *ffprobe now properlly called.*
+- _**Batch Upscale updates:**_
+    - *Provides upscale details, runs in threaded process for smoother UI.*
+    - *Batch Upscale updates: Added error handling/guidance.*
+    - *Batch Upscale updates: Fixed "bad menu entry index" error when choosing folder path twice.*
+  
+## 👥 **Credits**
+
+ffmpeg-6.0-essentials - https://ffmpeg.org/
+
+Real-ESRGAN_portable - https://github.com/xinntao/Real-ESRGAN#portable-executable-files-ncnn
