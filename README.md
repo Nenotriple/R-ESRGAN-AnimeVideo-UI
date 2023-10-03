@@ -56,7 +56,7 @@ v1.05 changes:
 - _**Fixed:**_
     - *Audio is now directly copied from source, not re-encoded. This improves quality and speeds up the merging process.*
     - *an error when a subfolder was present in either "raw_frames" or "upscaled_frames" when closing the application.*
-    - *ffprobe now properlly called.*
+    - *ffprobe now properly called.*
 - _**Batch Upscale updates:**_
     - *Provides upscale details, runs in threaded process for smoother UI.*
     - *Batch Upscale updates: Added error handling/guidance.*
