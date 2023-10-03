@@ -349,6 +349,7 @@ class reav_ui(tk.Frame):
 
     def _upscale_frames(self):
         try:
+            os.makedirs("upscaled_frames", exist_ok=True)
             for file in os.listdir("upscaled_frames"):
                 os.remove(os.path.join("upscaled_frames", file))
             self.start_timer()
@@ -356,7 +357,6 @@ class reav_ui(tk.Frame):
             self._disable_buttons()
             for menu_item in ["Batch Upscale", "Options", "Upscale Image", "File"]:
                 self.menubar.entryconfig(menu_item, state="disabled")
-            os.makedirs("upscaled_frames", exist_ok=True)
             frame_total = len(glob.glob('raw_frames/*.jpg'))
             self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", "raw_frames", "-o", "upscaled_frames", "-n", "realesr-animevideov3", "-s", "2", "-f", "jpg"])
             while self.process.poll() is None:
