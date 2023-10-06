@@ -47,20 +47,18 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-v1.05 changes:
+v1.07 changes:
 
-- _**New:**_
-    - *All requirements are now downloaded upon launch instead of packaged together with the script.*
-    - *Upscale Image. Upscales single image, saves with "_UP" appended to filename, opens in default image viewer when complete.*
-    - *Added support for: gif, webm, mov, m4v, wmv.*
-- _**Fixed:**_
-    - *Audio is now directly copied from source, not re-encoded. This improves quality and speeds up the merging process.*
-    - *an error when a subfolder was present in either "raw_frames" or "upscaled_frames" when closing the application.*
-    - *ffprobe now properly called.*
-- _**Batch Upscale updates:**_
-    - *Provides upscale details, runs in threaded process for smoother UI.*
-    - *Batch Upscale updates: Added error handling/guidance.*
-    - *Batch Upscale updates: Fixed "bad menu entry index" error when choosing folder path twice.*
+- Changed:
+   - All videos are now output with .mp4 format, .gif output remains unchanged.
+- New:
+   - Auto mode: This automatically runs Upscale and Merge operations after Extracting or Upscaling frames.
+   - Total video frames are now displayed in the ui while extracting. (for most filetypes)
+   - Video length and frame count now visible after selecting a video. (for most filetypes)
+   - Selecting a video now displays the middle most frame in the ui instead of the 20th frame. (for most filetypes)
+- Fixed:
+   - Fixed crash/hang when the app was expecting raw_frames and upscaled_frames folders when they don't exist.
+   - Fixed a similar error when running upscale frames without a directory setup prior.
   
 ## 👥 **Credits**
 
