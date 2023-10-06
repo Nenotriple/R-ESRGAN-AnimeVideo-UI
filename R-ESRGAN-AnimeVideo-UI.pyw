@@ -210,6 +210,7 @@ class reav_ui(tk.Frame):
         self.auto_check.grid(row=0, column=1, pady=3)
         create_tooltip(self.auto_check, "Enable this to automatically Upscale/Merge Frames after Extracting/Upscaling.")
 
+        self.process_stopped = False        
         self.stop_button = tk.Button(self, text="STOP", command=self.stop_process)
         self.stop_button.pack(side="top", fill=tk.X)     
 
@@ -405,7 +406,7 @@ class reav_ui(tk.Frame):
             self.stop_timer()
             self._enable_buttons()
             for button in [self.extract_button, self.upscale_button]:
-                button.config(state='disabled')            
+                button.config(state='disabled')
             for menu_item in ["Batch Upscale", "Upscale Image", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="normal")
 
@@ -712,15 +713,7 @@ app.mainloop()
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
 
-#v1.07 changes:
+#v1.08 changes:
 #
-#- Changed:
-#   - All videos are now output with .mp4 format, .gif output remains unchanged.
-#- New:
-#   - Auto mode: This automatically runs Upscale and Merge operations after Extracting or Upscaling frames.
-#   - Total video frames are now displayed in the ui while extracting. (for most filetypes)
-#   - Video length and frame count now visible after selecting a video. (for most filetypes)
-#   - Selecting a video now displays the middle most frame in the ui instead of the 20th frame. (for most filetypes)
 #- Fixed:
-#   - Fixed crash/hang when the app was expecting raw_frames and upscaled_frames folders when they don't exist.
-#   - Fixed a similar error when running upscale frames without a directory setup prior.
+#   - error: no attribute `process_stopped`
