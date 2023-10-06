@@ -2,7 +2,7 @@
 #                        #
 # R-ESRGAN-AnimeVideo-UI #
 #         reav-ui        #
-#      Version 1.05      #
+#      Version 1.07      #
 #                        #
 ##########################
 # Requirements: #
@@ -703,7 +703,7 @@ class reav_ui(tk.Frame):
 #           #
 
 root = tk.Tk()
-root.title('v1.05 - R-ESRGAN-AnimeVideo-UI')
+root.title('v1.07 - R-ESRGAN-AnimeVideo-UI')
 root.geometry('520x600')
 root.resizable(False, False)
 app = reav_ui(master=root)
