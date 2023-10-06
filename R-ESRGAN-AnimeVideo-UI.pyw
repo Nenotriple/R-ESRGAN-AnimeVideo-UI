@@ -6,8 +6,8 @@
 #                        #
 ##########################
 # Requirements: #
-# ffmpeg        # Included
-# ffprobe       # Included
+# ffmpeg        # Included: Auto-download
+# ffprobe       # Included: Auto-download
 # pillow        # Included: Auto-install
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -17,8 +17,9 @@
 
 import os
 import io
-import time
 import glob
+import time
+import datetime
 import threading
 import mimetypes
 import subprocess
@@ -197,12 +198,20 @@ class reav_ui(tk.Frame):
         self.keep_upscaled_check.grid(row=0, column=1, pady=3)
         create_tooltip(self.keep_upscaled_check, "Enable this before Merging or closing the window to save Upscaled Frames.")
 
-        self.merge_button = tk.Button(self, text="4) Merge Frames\t\t\t", command=self.merge_frames)
-        self.merge_button.pack(side="top", fill=tk.X)
+        self.button_frame3 = tk.Frame(self)
+        self.button_frame3.pack(anchor='center')
+        
+        self.merge_button = tk.Button(self.button_frame3, text="4) Merge Frames ", command=self.merge_frames, width=59)
+        self.merge_button.grid(row=0, column=0)
         self.merge_button.bind('<Button-3>', lambda event: self.merge_button.config(state='normal'))
+        
+        self.auto_var = tk.IntVar(value=0)
+        self.auto_check = tk.Checkbutton(self.button_frame3, text="Auto\t       ", variable=self.auto_var, width=10)
+        self.auto_check.grid(row=0, column=1, pady=3)
+        create_tooltip(self.auto_check, "Enable this to automatically Upscale/Merge Frames after Extracting/Upscaling.")
 
         self.stop_button = tk.Button(self, text="STOP", command=self.stop_process)
-        self.stop_button.pack(side="top", fill=tk.X)
+        self.stop_button.pack(side="top", fill=tk.X)     
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -218,11 +227,14 @@ class reav_ui(tk.Frame):
             "   - After upscaling video frames you can scale them down to the original size.\n"
             "       Options > Scale output frames to match input frames.\n"
 
-            "\nUpscale Image:\n"
-            "   - Select a single image to upscale.\n"
-
             "\nNOTE: The Upscale and Merge operations delete the previous frames by default.\n"
-            "   - If you want to keep the frames, make sure to enable the Keep Frames option.\n"            
+            "   - If you want to keep the frames, make sure to enable the Keep Frames option.\n" 
+
+            "\nBatch Upscale:\n"
+            "   - Upscales all images in a folder. Source images are not deleted.\n"            
+
+            "\nUpscale Image:\n"
+            "   - Upscale a single image. Source image is not deleted.\n"           
 
             "\nYou can right click greyed out buttons to enable them out of sequence.\n"
             "   - (Only use if you know what you're doing!).\n" 
@@ -279,6 +291,7 @@ class reav_ui(tk.Frame):
         self._disable_buttons()
         self.infotext_label.pack_forget()
         self.console_output_label["text"] = ""
+        self.operation_label["text"] = ""
         mimetypes.add_type("video/mkv", ".mkv")
         mimetypes.add_type("video/webm", ".webm")
         self.video_file = filedialog.askopenfilename()
@@ -289,12 +302,19 @@ class reav_ui(tk.Frame):
             self.filename_label["text"] = "Unsupported filetype or no file selected"
             return
         self.file_extension = os.path.splitext(self.video_file)[1]
+        result = subprocess.run(["./bin/ffprobe.exe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=nb_frames", "-of", "default=nokey=1:noprint_wrappers=1", self.video_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        total_frames = None
+        try:
+            total_frames = int(result.stdout.decode().strip())
+            middle_frame_number = total_frames // 2
+        except ValueError:
+            middle_frame_number = 20
         result = subprocess.run(["./bin/ffprobe.exe", "-v", "0", "-of", "compact=p=0:nk=1", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", self.video_file], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         self.frame_rate = result.stdout.decode().strip()
         numerator, denominator = map(int, self.frame_rate.split('/'))
         self.frame_rate = numerator / denominator
-        tenth_frame_time = 20 / float(self.frame_rate)
-        result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(tenth_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        middle_frame_time = middle_frame_number / float(self.frame_rate)
+        result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(middle_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         img = Image.open(io.BytesIO(result.stdout))
         max_size = (512, 512)
         aspect_ratio = img.width / img.height
@@ -313,11 +333,16 @@ class reav_ui(tk.Frame):
             self.thumbnail_label = tk.Label(image=photoImg)
             self.thumbnail_label.image = photoImg
             self.thumbnail_label.pack(side="bottom", expand=True, fill="both")
-        self.operation_label["text"] = ""
+        if total_frames is not None:
+            video_length_seconds = total_frames / float(self.frame_rate)
+            video_length_time_string = str(datetime.timedelta(seconds=int(video_length_seconds)))
+            self.operation_label["text"] = f"Video Length: {video_length_time_string}, Total Frames: {total_frames}"
+        else:
+            self.operation_label["text"] = f"Info collection failed... You can probably ignore this error."    
         self.timer_label["text"] = ""
         self.select_button.config(state='normal')
         self.extract_button.config(state='normal')
-        self.menubar.entryconfig("Options", state="disabled")
+        self.menubar.entryconfig("Options", state="disabled") 
 
     def _extract_frames(self):
         try:
@@ -329,19 +354,24 @@ class reav_ui(tk.Frame):
             os.makedirs("raw_frames", exist_ok=True)
             for filename in os.listdir('raw_frames'):
                 os.remove(f'raw_frames/{filename}')
+            try:
+                total_frames = subprocess.check_output(['./bin/ffprobe.exe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=nb_frames', '-of', 'default=nokey=1:noprint_wrappers=1', self.video_file])
+                total_frames = int(total_frames.decode('utf-8').strip())
+            except Exception as e:
+                total_frames = None
             self.process = subprocess.Popen(["./bin/ffmpeg.exe", "-i", self.video_file, "-qscale:v", "3", "-qmin", "3", "-qmax", "3", "-vsync", "0", "raw_frames/frame%08d.jpg"])
             while self.process.poll() is None:
                 frame_count = len(glob.glob('raw_frames/*.jpg'))
-                self.console_output_label["text"] = f"Extracted {frame_count:08d}"
-                time.sleep(.01)
-            self.operation_label["text"] = "Done Extracting!"
-        except Exception as e:
-            self.operation_label["text"] = f"Error: {str(e)}"
+                if total_frames is not None:
+                    self.console_output_label["text"] = f"Extracted {frame_count:08d} of {total_frames:08d}"
+                else:
+                    self.console_output_label["text"] = f"Extracted {frame_count:08d} frames"
         finally:
             self.stop_timer()
             self._enable_buttons()
-            self.extract_button.config(state='disabled')
-            self.merge_button.config(state='disabled')
+            self.operation_label["text"] = "Done Extracting!"
+            if self.auto_var.get() == 1:
+                self.upscale_frames()
             for button in [self.extract_button, self.merge_button]:
                 button.config(state='disabled')            
             for menu_item in ["Batch Upscale", "Upscale Image", "File"]:
@@ -367,6 +397,8 @@ class reav_ui(tk.Frame):
                 for file in os.listdir("raw_frames"):
                     os.remove(os.path.join("raw_frames", file))
             self.operation_label["text"] = "Done Upscaling!"
+            if self.auto_var.get() == 1 and not self.process_stopped:
+                self.merge_frames()
         except Exception as e:
             self.operation_label["text"] = f"Error: {str(e)}"
         finally:
@@ -388,22 +420,16 @@ class reav_ui(tk.Frame):
             num, denom = map(int, output.strip().split('/'))
             self.source_frame_rate = num / denom
             self.file_extension = os.path.splitext(self.video_file)[1]
-            output_file_name = os.path.splitext(os.path.basename(self.video_file))[0] + "_UPSCALE" + self.file_extension
-            output_file_path = os.path.join(os.path.dirname(self.video_file), output_file_name)    
-            self.stop_timer()
-            root = tk.Tk()
-            root.withdraw()
-            if os.path.exists(output_file_path) and messagebox.askquestion("Warning!", "File exists. Overwrite?", icon='warning') != 'yes':
-                self.operation_label["text"] = "Operation canceled."
-                self._enable_buttons()
-                self.stop_timer()
-                return
             if self.file_extension == '.gif':
+                output_file_name = os.path.splitext(os.path.basename(self.video_file))[0] + "_UPSCALE" + self.file_extension
+                output_file_path = os.path.join(os.path.dirname(self.video_file), output_file_name)
                 command = ["./bin/ffmpeg.exe", "-y", "-r", str(self.frame_rate), "-i", "upscaled_frames/frame%08d.jpg",
                            "-i", self.video_file,
                            "-c:v", 'gif',
                            output_file_path]
             else:
+                output_file_name = os.path.splitext(os.path.basename(self.video_file))[0] + "_UPSCALE.mp4"
+                output_file_path = os.path.join(os.path.dirname(self.video_file), output_file_name)
                 command = ["./bin/ffmpeg.exe", "-y", "-r", str(self.frame_rate), "-i", "upscaled_frames/frame%08d.jpg",
                            "-i", self.video_file,
                            "-c:v", 'libx264',
@@ -433,7 +459,7 @@ class reav_ui(tk.Frame):
             for button in [self.extract_button, self.merge_button, self.upscale_button]:
                 button.config(state='disabled')
             for menu_item in ["Batch Upscale", "Upscale Image", "File"]:
-                self.menubar.entryconfig(menu_item, state="normal")
+                self.menubar.entryconfig(menu_item, state="normal")               
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -648,6 +674,7 @@ class reav_ui(tk.Frame):
     def stop_process(self):
         if self.process:
             self.process.kill()
+            self.process_stopped = True
 
     def on_closing(self):
         if self.process is not None:
@@ -685,17 +712,15 @@ app.mainloop()
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
 
-#v1.05 changes:
+#v1.07 changes:
 #
+#- Changed:
+#   - All videos are now output with .mp4 format, .gif output remains unchanged.
 #- New:
-#    - All requirements are now downloaded upon launch instead of packaged together with the script.
-#    - Upscale Image. Upscales single image, saves with "_UP" appended to filename, opens in default image viewer when complete.
-#    - Added support for: gif, webm, mov, m4v, wmv.
+#   - Auto mode: This automatically runs Upscale and Merge operations after Extracting or Upscaling frames.
+#   - Total video frames are now displayed in the ui while extracting. (for most filetypes)
+#   - Video length and frame count now visible after selecting a video. (for most filetypes)
+#   - Selecting a video now displays the middle most frame in the ui instead of the 20th frame. (for most filetypes)
 #- Fixed:
-#    - Audio is now directly copied from source, not re-encoded. This improves quality and speeds up the merging process.
-#    - an error when a subfolder was present in either "raw_frames" or "upscaled_frames" when closing the application.
-#    - ffprobe now properlly called.
-#- Batch Upscale updates:
-#    - Provides upscale details, runs in threaded process for smoother UI.
-#    - Batch Upscale updates: Added error handling/guidance.
-#    - Batch Upscale updates: Fixed "bad menu entry index" error when choosing folder path twice.
+#   - Fixed crash/hang when the app was expecting raw_frames and upscaled_frames folders when they don't exist.
+#   - Fixed a similar error when running upscale frames without a directory setup prior.
