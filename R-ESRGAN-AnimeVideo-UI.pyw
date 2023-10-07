@@ -2,7 +2,7 @@
 #                        #
 # R-ESRGAN-AnimeVideo-UI #
 #         reav-ui        #
-#      Version 1.07      #
+#      Version 1.08      #
 #                        #
 ##########################
 # Requirements: #
@@ -17,6 +17,7 @@
 
 import os
 import io
+import re
 import glob
 import time
 import datetime
@@ -119,6 +120,12 @@ class reav_ui(tk.Frame):
         self.fileMenu.add_command(label="Clear upscaled_frames", command=lambda: [os.remove(os.path.join('upscaled_frames', file)) for file in os.listdir('upscaled_frames')])
 
         self.optionsMenu = tk.Menu(self.menubar, tearoff=0)
+        self.scale_factor = tk.StringVar(value="2")
+        self.scaleMenu = tk.Menu(self.optionsMenu, tearoff=0)
+        self.optionsMenu.add_cascade(label="Scale factor", menu=self.scaleMenu)
+        for i in ["2", "3", "4"]:
+            self.scaleMenu.add_radiobutton(label=i, variable=self.scale_factor, value=i)  
+        self.optionsMenu.add_separator()       
         self.menubar.add_cascade(label="Options", menu=self.optionsMenu)
         self.optionsMenu.add_command(label="Scale output frames to match input frames", command=self.confirm_scale)
 
@@ -343,10 +350,11 @@ class reav_ui(tk.Frame):
         self.timer_label["text"] = ""
         self.select_button.config(state='normal')
         self.extract_button.config(state='normal')
-        self.menubar.entryconfig("Options", state="disabled") 
+        self.menubar.entryconfig("Options", state="disabled")
 
     def _extract_frames(self):
         try:
+            start_time = time.time()
             self.start_timer()
             self.update_timer()
             self._disable_buttons()
@@ -364,7 +372,11 @@ class reav_ui(tk.Frame):
             while self.process.poll() is None:
                 frame_count = len(glob.glob('raw_frames/*.jpg'))
                 if total_frames is not None:
-                    self.console_output_label["text"] = f"Extracted {frame_count:08d} of {total_frames:08d}"
+                    elapsed_time = time.time() - start_time
+                    eta = (total_frames / frame_count - 1) * elapsed_time if frame_count > 0 else 0
+                    eta_str = str(datetime.timedelta(seconds=int(eta)))
+                    percentage_complete = (frame_count / total_frames) * 100 if total_frames > 0 else 0
+                    self.console_output_label["text"] = f"Extracted {frame_count:08d} of {total_frames:08d}, {percentage_complete:.2f}%, ETA: {eta_str}"
                 else:
                     self.console_output_label["text"] = f"Extracted {frame_count:08d} frames"
         finally:
@@ -389,10 +401,17 @@ class reav_ui(tk.Frame):
             for menu_item in ["Batch Upscale", "Options", "Upscale Image", "File"]:
                 self.menubar.entryconfig(menu_item, state="disabled")
             frame_total = len(glob.glob('raw_frames/*.jpg'))
-            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", "raw_frames", "-o", "upscaled_frames", "-n", "realesr-animevideov3", "-s", "2", "-f", "jpg"])
+            start_time = datetime.datetime.now()
+            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", "raw_frames", "-o", "upscaled_frames", "-n", "realesr-animevideov3", "-s", self.scale_factor.get(), "-f", "jpg"])
             while self.process.poll() is None:
                 frame_count = len(glob.glob('upscaled_frames/*.jpg'))
-                self.console_output_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}"
+                if frame_count > 0:
+                    elapsed_time = datetime.datetime.now() - start_time
+                    eta = (elapsed_time / frame_count) * (frame_total - frame_count)
+                    eta_seconds = int(round(eta.total_seconds()))
+                    eta_formatted = str(datetime.timedelta(seconds=eta_seconds))
+                    percentage_complete = (frame_count / frame_total) * 100
+                    self.console_output_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}, {percentage_complete:.2f}%, ETA: {eta_formatted}"
                 time.sleep(.1)
             if self.keep_raw_var.get() == 0:
                 for file in os.listdir("raw_frames"):
@@ -416,6 +435,7 @@ class reav_ui(tk.Frame):
             self._disable_buttons()
             for menu_item in ["Batch Upscale", "Upscale Image", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="disabled")
+            total_frames = len(os.listdir("upscaled_frames"))
             command = ["./bin/ffprobe.exe", "-v", "0", "-of", "compact=p=0:nk=1", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", self.video_file]
             output, _ = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True).communicate()
             num, denom = map(int, output.strip().split('/'))
@@ -442,8 +462,21 @@ class reav_ui(tk.Frame):
                            "-crf","18",
                            output_file_path]
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            start_time = time.time()
             for line in iter(process.stdout.readline, ""):
-                self.console_output_label["text"] = line.replace("time=", "").replace("dup=", "").replace("drop=", "").strip()
+                frame_number_search = re.search(r'frame=\s*(\d+)', line)
+                if frame_number_search:
+                    frame_number = int(frame_number_search.group(1))
+                    elapsed_time = time.time() - start_time
+                    if frame_number == 0:
+                        eta_seconds = 0
+                        eta_time = "00:00:00"
+                        percentage_complete = 0
+                    else:
+                        eta_seconds = elapsed_time * (total_frames - frame_number) / frame_number
+                        eta_time = time.strftime("%H:%M:%S", time.gmtime(eta_seconds))
+                        percentage_complete = (frame_number / total_frames) * 100
+                    self.console_output_label["text"] = f"Frame: {frame_number}/{total_frames} ({percentage_complete:.2f}%) ETA: {eta_time}"
             process.stdout.close()
             process.wait()
             self.stop_timer()
@@ -460,7 +493,7 @@ class reav_ui(tk.Frame):
             for button in [self.extract_button, self.merge_button, self.upscale_button]:
                 button.config(state='disabled')
             for menu_item in ["Batch Upscale", "Upscale Image", "File"]:
-                self.menubar.entryconfig(menu_item, state="normal")               
+                self.menubar.entryconfig(menu_item, state="normal")            
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -488,7 +521,7 @@ class reav_ui(tk.Frame):
                 self.select_button.config(state='disabled')
                 for menu_item in ["Batch Upscale", "Upscale Image", "Options", "File"]:
                     self.menubar.entryconfig(menu_item, state="disabled")
-                with subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", input_image, "-o", output_image, "-n", "realesr-animevideov3", "-s", "2", "-f", "jpg"]) as self.process:
+                with subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", input_image, "-o", output_image, "-n", "realesr-animevideov3", "-s", self.scale_factor.get(), "-f", "jpg"]) as self.process:
                     self.process.wait()
                 os.rename(output_image, final_output)
                 self.filename_label["text"] = "Output:\n" + final_output           
@@ -550,7 +583,7 @@ class reav_ui(tk.Frame):
                 self.operation_label["text"] = ""
                 return
             frame_total = len(image_files)
-            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", self.source_folder, "-o", self.output_folder, "-n", "realesr-animevideov3", "-s", "2", "-f", "jpg"])
+            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", self.source_folder, "-o", self.output_folder, "-n", "realesr-animevideov3", "-s", self.scale_factor.get(), "-f", "jpg"])
             while self.process.poll() is None:
                 frame_count = len(glob.glob(f'{self.output_folder}/*.jpg'))
                 self.console_output_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}"
@@ -704,7 +737,7 @@ class reav_ui(tk.Frame):
 #           #
 
 root = tk.Tk()
-root.title('v1.07 - R-ESRGAN-AnimeVideo-UI')
+root.title('v1.08 - R-ESRGAN-AnimeVideo-UI')
 root.geometry('520x600')
 root.resizable(False, False)
 app = reav_ui(master=root)
@@ -714,6 +747,10 @@ app.mainloop()
 ##########################################################################################################################################################################
 
 #v1.08 changes:
+#
+#- New:
+#   - You can now select a scaling factor of 2, 3, 4. - This also controls batch and single image upscale.
+#   - Percentage complete and ETA now displayed in the UI. 
 #
 #- Fixed:
 #   - error: no attribute `process_stopped`
