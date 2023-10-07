@@ -50,11 +50,11 @@ The `pillow` library will be downloaded and installed (if not already available)
 v1.08 changes:
 
 - New:
-   - You can now select a scaling factor of 2, 3, or 4. This also controls batch and single image upscale.
-   - Percent complete, and ETA is now displayed in the UI.
+  - You can now select a scaling factor of 2, 3, or 4. This also controls batch and single image upscale.
+  - Percent complete, and ETA is now displayed in the UI.
 
 - Fixed:
-   - error: no attribute `process_stopped`
+  - error: no attribute `process_stopped`
   
 ## 👥 **Credits**
 
