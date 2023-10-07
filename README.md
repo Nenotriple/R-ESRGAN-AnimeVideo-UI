@@ -47,21 +47,17 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-v1.07 changes:
+v1.08 changes:
 
-- Changed:
-   - All videos are now output with .mp4 format, .gif output remains unchanged.
 - New:
-   - Auto mode: This automatically runs Upscale and Merge operations after Extracting or Upscaling frames.
-   - Total video frames are now displayed in the ui while extracting. (for most filetypes)
-   - Video length and frame count now visible after selecting a video. (for most filetypes)
-   - Selecting a video now displays the middle most frame in the ui instead of the 20th frame. (for most filetypes)
+   - You can now select a scaling factor of 2, 3, or 4. This also controls batch and single image upscale.
+   - Percent complete, and ETA is now displayed in the UI.
+
 - Fixed:
-   - Fixed crash/hang when the app was expecting raw_frames and upscaled_frames folders when they don't exist.
-   - Fixed a similar error when running upscale frames without a directory setup prior.
+   - error: no attribute `process_stopped`
   
 ## 👥 **Credits**
 
-ffmpeg-6.0-essentials - https://ffmpeg.org/
+ffmpeg-6.0-essentials: https://ffmpeg.org/
 
-Real-ESRGAN_portable - https://github.com/xinntao/Real-ESRGAN#portable-executable-files-ncnn
+Real-ESRGAN_portable: https://github.com/xinntao/Real-ESRGAN#portable-executable-files-ncnn
