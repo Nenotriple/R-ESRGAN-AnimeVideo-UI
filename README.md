@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/assets/70049990/22e22572-5cb3-4bf1-a7fc-bc871b855174" alt="reav-ui cover_small">
+  <img src="https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/assets/70049990/1bb2b8da-0f11-401d-a873-7d2f55883fa3" alt="app_cover">
 </p>
 
 <h1 align="center">R-ESRGAN-AnimeVideo-UI (reav-ui)</h1>
