@@ -47,14 +47,21 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-v1.08 changes:
+v1.09 changes:
 
 - New:
-  - You can now select a scaling factor of 2, 3, or 4. This also controls batch and single image upscale.
-  - Percent complete, and ETA is now displayed in the UI.
+    - FPS is now displayed during frame processing.
+    - After merging, the STOP button changes function, allowing you to open the output folder.
+    - After merging, the original and final file sizes, along with the percent change, are displayed.
+    - You can now click on the video preview to open the source folder.
+    - You can now output gif files as mp4 (default) or gif format, for a general increase in quality and reduced file size.
+    - About menu/window where you can see the info text and open the link to this repo.
 
 - Fixed:
-  - error: no attribute `process_stopped`
+    - The options menu is now accessible at all stages.
+    - Issue where pressing stop while auto was enabled would still continue to the next steps.
+    - Issue where subfolders present in raw_frames, upscaled_frames, and batch upscale output would cause an error.
+    - Issue where details during batch upscale would be incorrect if images were already present in the selected output folder.
   
 ## 👥 **Credits**
 
