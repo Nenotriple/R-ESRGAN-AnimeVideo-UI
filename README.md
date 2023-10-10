@@ -36,6 +36,8 @@ Check out these [comparisons](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-
 
 ## 🚩 Requirements
 
+**You must have Python 3.10+ installed to the system PATH**
+
 **Running the script will automatically fulfill all requirements.**
 
 The `pillow` library will be downloaded and installed (if not already available) upon first launch.
