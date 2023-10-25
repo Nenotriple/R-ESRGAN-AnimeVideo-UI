@@ -56,7 +56,7 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.11 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.11)
+[v1.11 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.11-Hotfix)
 
 - New:
   - `Tools Menu`: This new menu is now where you access Batch and Single image upscale, along with Resize.
