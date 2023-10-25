@@ -35,7 +35,7 @@ Why use this over an application like [Chainner](https://github.com/chaiNNer-org
 While both applications are undoubtedly more than capable, *(among others, I'm sure)* I found [xinntao's](https://github.com/xinntao) implementation is extremely fast compared to Chainner. And of course free is always better than Topaz Video AI's high cost.
 
 Other upscale models are popular, but [realesr-animevideov3](https://github.com/xinntao/Real-ESRGAN/blob/master/docs/anime_video_model.md) remains a favorite of mine for multiple reasons.
-- It's very fast. [Speed Tests](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/Speed-Tests)
+- It's very fast. [Speed Tests⏱️](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/%E2%8F%B1%EF%B8%8FSpeed-Tests)
 - While it does have somewhat heavy smoothing, it doesn't totally destroy fine details like grain.
 - In my opinion, it has superb line reconstruction compared to others like `RealESRGAN_x4plus_anime_6B`
 
