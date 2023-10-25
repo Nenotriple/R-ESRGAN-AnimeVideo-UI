@@ -17,11 +17,16 @@
 
 **Note:** The `Upscale` and `Merge` operations delete the previous frames by default. If you want to keep the frames, make sure to enable the `Keep Frames` option.
 
-After extracting/upscaling, you have the option to scale the frames to any size.
+After Extracting or Upscaling, you have the option to scale the frames to any size, either by percent or exact resolution.
 
-mp4, gif, avi, mkv, webm, mov, m4v, wmv, are supported.
+`mp4`, `gif`, `avi`, `mkv`, `webm`, `mov`, `m4v`, `wmv`, are supported.
 
-Explore the options!
+- Other Uses:
+  - Batch Upscale a folder of images.
+  - Upscale a single image.
+  - You can also use these model for upscaling: `RealESRGAN_General_x4_3`, `realesrgan-x4plus`, `realesrgan-x4plus-anime`
+  - Output any video as a gif, and/or output gif as mp4.
+
 
 ## 🤷 Why?
 
@@ -51,7 +56,35 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-v1.10 changes:
+[v1.11 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.11)
+
+- New:
+  - `Tools Menu`: This new menu is now where you access Batch and Single image upscale, along with Resize.
+  - `clear folder`: Added a confirmation dialog to these File options.
+  - `Batch Upscale`: Selecting an output folder is now optional. Images will output to "source/output" if no folder is selected.
+  - You can now right click the thumbnail to progress the displayed frame by ~2sec.
+  - Gif files are now animated in the UI, updated every 120ms (may not display at full speed).
+  - When a video is selected, its size, current dimensions, the selected scale factor, and the upscaled dimensions are displayed.
+  - Surprised or sad text faces are displayed for mild errors. (ó︹ò ｡) (e.g., no video selected, invalid file type).
+  - `Keep Frames` options are now always available. Sometimes you may wish to change your mind during a long process
+<br>
+
+- Fixed:
+  - Improved robustness of media info collection.
+    - Total frames are now approximated for video streams that don't declare their total frames. This can lead to a slight discrepancy with the reported extracted frames. All frames will be extracted regardless.
+  - Invisible tooltips no longer obstruct the checkboxes.
+  - The chosen upscale model is now applied to both Batch and Single image upscale.
+  - `Batch Upscale`: The elapsed timer now correctly updates in the UI.
+  - `Resize`: No longer displays "Done Resizing!" immediately after running.
+  - `Extract Frames`: This process can now be stopped.
+  - Double-clicking is now required on the thumbnail to open the video directory.
+    - This helps to prevent accidental openings when clicking the window.
+  - Opening the video directory by clicking the thumbnail is less prone to issues.
+    - The script now uses "os.startfile" instead of "subprocess.Popen 'explorer'", preventing multiple folder windows from opening when the folder is already open.
+  - Stopping a process now properly updates the ui instead of stating "Done! ..."
+
+___
+[v1.10 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.10)
 
 - New:
   - You can now use other upscale models. `RealESRGAN_General_x4_v3, realesrgan-x4plus, realesrgan-x4plus-anime`
