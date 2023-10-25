@@ -541,6 +541,7 @@ class reav_ui(tk.Frame):
             self.merge_frames()
 
     def _merge_frames(self):
+        self.process_stopped = False
         try:
             self.start_timer()
             self.disable_buttons()
