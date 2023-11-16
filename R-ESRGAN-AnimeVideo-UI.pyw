@@ -2,7 +2,7 @@
 #                        #
 # R-ESRGAN-AnimeVideo-UI #
 #         reav-ui        #
-#      Version 1.11      #
+#      Version 1.12      #
 #                        #
 ##########################
 # Requirements: #
@@ -18,6 +18,7 @@
 import os
 import io
 import re
+import sys
 import glob
 import time
 import shutil
@@ -26,21 +27,53 @@ import threading
 import mimetypes
 import subprocess
 import tkinter as tk
-from tkinter import filedialog, simpledialog, messagebox, Tk
+from tkinter import filedialog, simpledialog, messagebox, Tk, Button, Toplevel, Frame, X, BOTH, TclError
 from subprocess import TimeoutExpired
 
+##################
+#                #
+# Install Pillow #
+#                #
+##################
+
 try:
-    from PIL import ImageTk, Image, ImageSequence
+    from PIL import Image, ImageTk, ImageSequence
 except ImportError:
-    print("Pillow not found...")
     import subprocess, sys
+    import threading
+    from tkinter import Tk, Label, messagebox
+
+    def download_pillow():
+        cmd = ["pythonw", '-m', 'pip', 'install', 'pillow']
+        process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        for line in iter(lambda: process.stdout.readline(), b''):
+            pillow_label = Label(root, wraplength=450)
+            pillow_label.pack(anchor="w")
+            pillow_label.config(text=line.rstrip())
+        process.stdout.close()
+        process.wait()
+        done_label = Label(root, text="\nAll done! This window will now close...", wraplength=450)
+        done_label.pack(anchor="w")
+        root.after(3000, root.destroy)
+
     root = Tk()
+    root.title("Pillow Is Installing...")
+    root.geometry('600x200')
+    root.resizable(False, False)
     root.withdraw()
-    install_pillow = messagebox.askyesno("Pillow not installed!", " Pillow (Image Processor) not found. Would you like to install it? ~2.5MB \n\n This is a hard requirement.")
+    root.protocol("WM_DELETE_WINDOW", lambda: None)
+
+    install_pillow = messagebox.askyesno("Pillow not installed!", "Pillow not found!\npypi.org/project/Pillow\n\nWould you like to install it? ~2.5MB \n\n It's required to view and process images.")
     if install_pillow:
-        subprocess.check_call(["python", '-m', 'pip', 'install', 'pillow'])
-        messagebox.showinfo("Pillow Installed", " Successfully installed Pillow. \n\n Please restart the program.")
-    sys.exit()
+        root.deiconify()
+        pillow_label = Label(root, wraplength=450)
+        pillow_label.pack(anchor="w")
+        pillow_label.config(text="Beginning Pillow install now...\n")
+        threading.Thread(target=download_pillow).start()
+        root.mainloop()
+        from PIL import Image
+    else:
+        sys.exit()
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -51,7 +84,7 @@ except ImportError:
 class AboutWindow(tk.Toplevel):
 
     info_text = (
-    "\nSelect a video:\n"
+    "\nSupported Video Types:\n"
     "   - mp4, gif, avi, mkv, webm, mov, m4v, wmv\n"
 
     "\nNOTE:\n"
@@ -70,9 +103,6 @@ class AboutWindow(tk.Toplevel):
 
     "\nYou can right-click grayed-out buttons to enable them out of sequence.\n"
     "   - Only use if you know what you're doing!\n"
-
-    "\nThis program will open several command prompts during operation.\n"
-    "   - (ffmpeg, realesrgan)"
     )
 
     def __init__(self, master=None):
@@ -82,12 +112,11 @@ class AboutWindow(tk.Toplevel):
         self.maxsize(800, 600)
         self.minsize(450, 600)
 
-        self.button = tk.Button(self, text="Open: github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI", fg="blue", command=self.open_url)
-        self.button.pack(fill="x")
+        self.url_button = tk.Button(self, text="Open: github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI", fg="blue", command=self.open_url)
+        self.url_button.pack(fill="x")
 
         self.info_label = tk.Label(self, text="Info", font=("Arial", 14))
         self.info_label.pack(pady=5)
-
         self.info_text = tk.Label(self, text=AboutWindow.info_text, width=100, anchor='w', justify='left')
         self.info_text.pack(pady=5)
 
@@ -96,10 +125,8 @@ class AboutWindow(tk.Toplevel):
 
         self.credits_label = tk.Label(self, text="Credits", font=("Arial", 14))
         self.credits_label.pack(pady=5)
-
-        self.info_label = tk.Label(self, text="(2023) Created by: Nenotriple", font=("Arial", 10))
-        self.info_label.pack(pady=5)
-
+        self.made_by_label = tk.Label(self, text="(2023) Created by: Nenotriple", font=("Arial", 10))
+        self.made_by_label.pack(pady=5)
         self.credits_text = tk.Label(self, text= ("ffmpeg-6.0-essentials: ffmpeg.org\nReal-ESRGAN_portable: github.com/xinntao/Real-ESRGAN\n Thank you!"), width=50)
         self.credits_text.pack(pady=5)
 
@@ -166,9 +193,11 @@ class reav_ui(tk.Frame):
         self.pack(fill=tk.BOTH, expand=1)
         self.create_interface()
 
-        # initialize process and timer.
+        self.about_window = None
+        self.video_file = []
         self.process = None
         self.process_stopped = False
+        self.timer_running = False
         self.start_time = time.time()
 
         # This is used to track when the user selects a scale factor, so we can update the ui.
@@ -213,23 +242,23 @@ class reav_ui(tk.Frame):
         self.fileMenu.add_command(label="Open: Extracted Frames", command=lambda: os.startfile('raw_frames'))
         self.fileMenu.add_command(label="Open: Upscaled Frames", command=lambda: os.startfile('upscaled_frames'))
         self.fileMenu.add_separator()
-        self.fileMenu.add_command(label="Clear: Extracted Frames", command=lambda: self.toolsmenu_clear_frames('raw_frames'))
-        self.fileMenu.add_command(label="Clear: Upscaled Frames", command=lambda: self.toolsmenu_clear_frames('upscaled_frames'))
+        self.fileMenu.add_command(label="Clear: Extracted Frames", command=lambda: self.fileMenu_clear_frames('raw_frames'))
+        self.fileMenu.add_command(label="Clear: Upscaled Frames", command=lambda: self.fileMenu_clear_frames('upscaled_frames'))
 
         # Options Menu
         self.optionsMenu = tk.Menu(self.menubar, tearoff=0)
+        # Upscale Model
         self.upscale_model = tk.StringVar(value="realesr-animevideov3")
         self.modelMenu = tk.Menu(self.optionsMenu, tearoff=0)
         self.optionsMenu.add_cascade(label="Upscale Model", menu=self.modelMenu)
         for model in ["realesr-animevideov3", "RealESRGAN_General_x4_v3", "realesrgan-x4plus", "realesrgan-x4plus-anime"]:
             self.modelMenu.add_radiobutton(label=model, variable=self.upscale_model, value=model)
-
         # Scale Factor
         self.scale_factor = tk.StringVar(value="2")
         self.scaleMenu = tk.Menu(self.optionsMenu, tearoff=0)
         self.optionsMenu.add_cascade(label="Upscale Factor", menu=self.scaleMenu)
         for i in ["1", "2", "3", "4"]:
-            self.scaleMenu.add_radiobutton(label=i, variable=self.scale_factor, value=i)
+            self.scaleMenu.add_radiobutton(label="x"+i, variable=self.scale_factor, value=i)
         self.menubar.add_cascade(label="Options", menu=self.optionsMenu)
         self.upscale_model.trace('w', self.update_scale_factor)
 
@@ -243,25 +272,9 @@ class reav_ui(tk.Frame):
         # Tools Menu
         self.toolsMenu = tk.Menu(self.menubar, tearoff=0)
         self.menubar.add_cascade(label="Tools", menu=self.toolsMenu)
-
-        # Batch Upscale
-        self.batchUpscaleMenu = tk.Menu(self.toolsMenu, tearoff=0)
-        self.source_folder_index = 0
-        self.output_folder_index = 1
-        self.clear_folder_choice_index = 2
-        self.toolsMenu.add_cascade(label="Batch Upscale", menu=self.batchUpscaleMenu)
-        self.batchUpscaleMenu.add_command(label="Select: Source Folder", command=self.select_source_folder)
-        self.batchUpscaleMenu.add_command(label="Select: Output Folder (optional)", command=self.select_output_folder)
-        self.batchUpscaleMenu.add_separator()
-        self.batchUpscaleMenu.add_command(label="Clear Folder Choice", command=self.clear_folder_choice)
-        self.batchUpscaleMenu.add_separator()
-        self.batchUpscaleMenu.add_command(label="Run", command=self.batch_upscale)
-
-        # Single Image Upscale
+        self.toolsMenu.add_command(label="Batch Upscale", command=self.batch_upscale_menu)
         self.toolsMenu.add_command(label="Upscale a Single Image", command=self.select_and_upscale_image)
         self.toolsMenu.add_separator()
-
-        # Resize Frames
         self.toolsMenu.add_command(label="Resize: Extracted Frames", command=lambda: self.confirm_scale("raw_frames"))
         self.toolsMenu.add_command(label="Resize: Upscaled Frames", command=lambda: self.confirm_scale("upscaled_frames"))
 
@@ -275,26 +288,27 @@ class reav_ui(tk.Frame):
 #        #
 
         # Filename
-        self.filename_label = tk.Label(self)
-        self.filename_label["text"] = "Select a video to begin!"
-        self.filename_label['wraplength'] = 500
-        self.filename_label.pack(side="top", fill=tk.X)
+        self.top_label = tk.Label(self)
+        self.top_label["text"] = "Select a video to begin!"
+        self.top_label['wraplength'] = 500
+        self.top_label.pack(side="top", fill=tk.X)
+        self.top_label.bind("<Button-3>", self.copy_to_clipboard)
 
         # Console Output
-        self.console_output_label = tk.Label(self)
-        self.console_output_label["wraplength"] = 500
-        self.console_output_label.pack(side="top", fill=tk.X)
+        self.middle_label = tk.Label(self)
+        self.middle_label["wraplength"] = 500
+        self.middle_label.pack(side="top", fill=tk.X)
+        self.middle_label.bind("<Button-3>", self.copy_to_clipboard)
 
         # Operation
-        self.operation_label = tk.Label(self)
-        self.operation_label['wraplength'] = 500
-        self.operation_label.pack(side="top", fill=tk.X)
+        self.bottom_label = tk.Label(self)
+        self.bottom_label['wraplength'] = 500
+        self.bottom_label.pack(side="top", fill=tk.X)
+        self.bottom_label.bind("<Button-3>", self.copy_to_clipboard)
 
         # Timer
         self.timer_label = tk.Label(self)
-        self.operation_label['wraplength'] = 500
         self.timer_label.pack(side="top", fill=tk.X)
-        self.timer_running = False
 
         # Video Thumbnail (see "show_thumbnail")
         self.thumbnail_label = None
@@ -310,6 +324,8 @@ class reav_ui(tk.Frame):
         self.select_video_button["text"] = "1) Select Video\t\t\t"
         self.select_video_button["command"] = self.select_video
         self.select_video_button.pack(side="top", fill=tk.X)
+        self.select_video_button.bind("<Enter>", self.mouse_enter)
+        self.select_video_button.bind("<Leave>", self.mouse_leave)
 
         self.button_frame1 = tk.Frame(self)
         self.button_frame1.pack(anchor='center')
@@ -318,12 +334,16 @@ class reav_ui(tk.Frame):
         self.extract_button = tk.Button(self.button_frame1, text="2) Extract Frames  ", command=self.extract_frames, width=59, height=1)
         self.extract_button.grid(row=0, column=0, pady=3)
         self.extract_button.bind('<Button-3>', lambda event: self.extract_button.config(state='normal'))
+        self.extract_button.bind("<Enter>", self.mouse_enter)
+        self.extract_button.bind("<Leave>", self.mouse_leave)
 
         # Keep raw_frames
         self.keep_raw_var = tk.IntVar(value=0)
         self.keep_raw_check = tk.Checkbutton(self.button_frame1, text="Keep Frames", variable=self.keep_raw_var)
         self.keep_raw_check.grid(row=0, column=1, pady=3)
         ToolTip.create_tooltip(self.keep_raw_check, "Enable this before Upscaling or closing the window to save Raw Frames.", 500, 20, 30)
+        self.keep_raw_check.bind("<Enter>", self.mouse_enter, add="+")
+        self.keep_raw_check.bind("<Leave>", self.mouse_leave, add="+")
 
         self.button_frame2 = tk.Frame(self)
         self.button_frame2.pack(anchor='center')
@@ -334,12 +354,16 @@ class reav_ui(tk.Frame):
         self.upscale_button["command"] = self.upscale_frames
         self.upscale_button.grid(row=0, column=0)
         self.upscale_button.bind('<Button-3>', lambda event: self.upscale_button.config(state='normal'))
+        self.upscale_button.bind("<Enter>", self.mouse_enter)
+        self.upscale_button.bind("<Leave>", self.mouse_leave)
 
         # Keep upscaled_frames
         self.keep_upscaled_var = tk.IntVar(value=0)
         self.keep_upscaled_check = tk.Checkbutton(self.button_frame2, text="Keep Frames", variable=self.keep_upscaled_var)
         self.keep_upscaled_check.grid(row=0, column=1, pady=3)
         ToolTip.create_tooltip(self.keep_upscaled_check, "Enable this before Merging or closing the window to save Upscaled Frames.", 500, 20, 30)
+        self.keep_upscaled_check.bind("<Enter>", self.mouse_enter, add="+")
+        self.keep_upscaled_check.bind("<Leave>", self.mouse_leave, add="+")
 
         self.button_frame3 = tk.Frame(self)
         self.button_frame3.pack(anchor='center')
@@ -348,16 +372,22 @@ class reav_ui(tk.Frame):
         self.merge_button = tk.Button(self.button_frame3, text="4) Merge Frames ", command=self.merge_frames, width=59)
         self.merge_button.grid(row=0, column=0)
         self.merge_button.bind('<Button-3>', lambda event: self.merge_button.config(state='normal'))
+        self.merge_button.bind("<Enter>", self.mouse_enter)
+        self.merge_button.bind("<Leave>", self.mouse_leave)
 
         # Auto
         self.auto_var = tk.IntVar(value=0)
         self.auto_check = tk.Checkbutton(self.button_frame3, text="Auto\t       ", variable=self.auto_var, width=10)
         self.auto_check.grid(row=0, column=1, pady=3)
         ToolTip.create_tooltip(self.auto_check, "Enable this to automatically Upscale/Merge Frames after Extracting/Upscaling.", 500, 20, 30)
+        self.auto_check.bind("<Enter>", self.mouse_enter, add="+")
+        self.auto_check.bind("<Leave>", self.mouse_leave, add="+")
 
         # Stop
         self.stop_button = tk.Button(self, text="STOP", command=self.stop_process)
         self.stop_button.pack(side="top", fill=tk.X)
+        self.stop_button.bind("<Enter>", self.mouse_enter)
+        self.stop_button.bind("<Leave>", self.mouse_leave)
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -375,32 +405,32 @@ class reav_ui(tk.Frame):
 #         #
 
     def extract_frames(self):
-        self.operation_label["text"] = "Extracting... This may take a while..."
+        self.bottom_label["text"] = "Extracting... This may take a while..."
         thread = threading.Thread(target=self._extract_frames)
         thread.start()
 
     def upscale_frames(self):
-        self.operation_label["text"] = "Upscaling... This may take a while..."
+        self.bottom_label["text"] = "Upscaling... This may take a while..."
         thread = threading.Thread(target=self._upscale_frames)
         thread.start()
 
     def merge_frames(self):
-        self.operation_label["text"] = "Merging... This may take a while..."
+        self.bottom_label["text"] = "Merging... This may take a while..."
         thread = threading.Thread(target=self._merge_frames)
         thread.start()
 
     def scale_frames(self):
-        self.operation_label["text"] = "Resizing... This may take a while..."
+        self.bottom_label["text"] = "Resizing... This may take a while..."
         thread = threading.Thread(target=self._scale_frames)
         thread.start()
 
     def batch_upscale(self):
-        self.operation_label["text"] = "Batch Upscaling... This may take a while..."
+        self.bottom_label["text"] = "Batch Upscaling... This may take a while..."
         thread = threading.Thread(target=self._batch_upscale)
         thread.start()
 
     def select_and_upscale_image(self):
-        self.operation_label["text"] = "Upscaling Single Image... This may take a while..."
+        self.bottom_label["text"] = "Upscaling Single Image... This may take a while..."
         thread = threading.Thread(target=self._select_and_upscale_image)
         thread.start()
 
@@ -415,22 +445,23 @@ class reav_ui(tk.Frame):
             frame_count = len(glob.glob('raw_frames/*.jpg'))
             if total_frames is not None:
                 fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(frame_count, total_frames, start_time)
-                self.console_output_label["text"] = f"Extracted {frame_count:08d}, of {total_frames:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
+                if not self.process_stopped:
+                    self.middle_label["text"] = f"Extracted {frame_count:08d}, of {total_frames:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
             else:
-                self.console_output_label["text"] = f"Extracted {frame_count:08d} frames"
+                self.middle_label["text"] = f"Extracted {frame_count:08d} frames"
         frame_count = len(glob.glob('raw_frames/*.jpg'))
-        if total_frames is not None:
+        if total_frames is not None and not self.process_stopped:
             fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(frame_count, total_frames, start_time)
-            self.console_output_label["text"] = f"Extracted {frame_count:08d}, of {frame_count:08d}, 100%\nETA: {eta_str}, FPS: {fps:.2f}"
-        else:
-            self.console_output_label["text"] = f"Extracted {frame_count:08d} frames"
+            self.middle_label["text"] = f"Extracted {frame_count:08d}, of {frame_count:08d}, 100%\nETA: {eta_str}, FPS: {fps:.2f}"
+        elif not self.process_stopped:
+            self.middle_label["text"] = f"Extracted {frame_count:08d} frames"
 
     def monitor_upscale_frames(self, frame_total, start_time):
         while self.process.poll() is None:
             frame_count = len(glob.glob('upscaled_frames/*.jpg'))
             if frame_count > 0:
                 fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(frame_count, frame_total, start_time)
-                self.console_output_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
+                self.middle_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
 
     def monitor_merge_frames(self, process, frame_count, total_frames, start_time, start_file_size):
         for line in iter(process.stdout.readline, ""):
@@ -438,14 +469,14 @@ class reav_ui(tk.Frame):
             if frame_number_search:
                 frame_count = int(frame_number_search.group(1))
                 fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(frame_count, total_frames, start_time, start_file_size)
-                self.console_output_label["text"] = f"Frame: {frame_count:08d}, of {total_frames:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
+                self.middle_label["text"] = f"Frame: {frame_count:08d}, of {total_frames:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
         return frame_count
 
     def monitor_batch_upscale(self, frame_total, start_time):
         while self.process.poll() is None:
             frame_count = len(glob.glob(f'{self.output_folder}/*.jpg'))
             fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(frame_count, frame_total, start_time)
-            self.console_output_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
+            self.middle_label["text"] = f"Upscaled {frame_count:08d}, of {frame_total:08d}, {percent_complete:.2f}%\nETA: {eta_str}, FPS: {fps:.2f}"
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -456,16 +487,16 @@ class reav_ui(tk.Frame):
     def select_video(self):
         self.disable_buttons()
         self.infotext_label.pack_forget()
-        self.console_output_label["text"] = ""
-        self.operation_label["text"] = ""
+        self.middle_label["text"] = ""
+        self.bottom_label["text"] = ""
         self.timer_label["text"] = ""
         self.video_file = filedialog.askopenfilename()
-        self.filename_label["text"] = f"{os.path.basename(self.video_file)}"
+        self.top_label["text"] = f"{os.path.basename(self.video_file)}"
         self.file_extension = os.path.splitext(self.video_file)[1]
         if mimetypes.guess_type(self.video_file)[0] not in self.supported_video_types:
             self.select_video_button.config(state='normal')
-            self.filename_label["text"] = "Unsupported filetype or no file selected"
-            self.operation_label["text"] = self.sad_faces()
+            self.top_label["text"] = "Invalid filetype, or no file selected!"
+            self.bottom_label["text"] = self.sad_faces()
             if self.thumbnail_label is not None:
                 self.thumbnail_label.destroy()
             return
@@ -481,6 +512,10 @@ class reav_ui(tk.Frame):
         self.stop_button.config(text="STOP", command=self.stop_process)
 
     def _extract_frames(self):
+        if not self.video_file:
+            self.bottom_label["text"] = "Error: No video file selected."
+            return
+        self.process_stopped = False
         try:
             start_time = time.time()
             self.start_timer()
@@ -494,14 +529,14 @@ class reav_ui(tk.Frame):
                 total_frames = int(self.total_frames)
             except Exception as e:
                 total_frames = None
-                self.operation_label["text"] = f"Error: {str(e)}"
-            self.process = subprocess.Popen(["./bin/ffmpeg.exe", "-i", self.video_file, "-qscale:v", "3", "-qmin", "3", "-qmax", "3", "-vsync", "0", "raw_frames/frame%08d.jpg"])
+                self.bottom_label["text"] = f"Error: {str(e)}"
+            self.process = subprocess.Popen(["./bin/ffmpeg.exe", "-i", self.video_file, "-qscale:v", "3", "-qmin", "3", "-qmax", "3", "-vsync", "0", "raw_frames/frame%08d.jpg"], creationflags=subprocess.CREATE_NO_WINDOW)
             self.monitor_extract_frames(self.process, total_frames, start_time)
         finally:
             self.stop_timer()
             self.enable_buttons()
             if not self.process_stopped:
-                self.operation_label["text"] = "Done Extracting!"
+                self.bottom_label["text"] = "Done Extracting!"
             self.stop_button.config(text="STOP", command=self.stop_process)
             if self.auto_var.get() == 1:
                 self.upscale_frames()
@@ -511,6 +546,7 @@ class reav_ui(tk.Frame):
                 self.menubar.entryconfig(menu_item, state="normal")
 
     def _upscale_frames(self):
+        self.process_stopped = False
         try:
             os.makedirs("upscaled_frames", exist_ok=True)
             self.clean_directory("upscaled_frames")
@@ -521,10 +557,10 @@ class reav_ui(tk.Frame):
                 self.menubar.entryconfig(menu_item, state="disabled")
             frame_total = len(glob.glob('raw_frames/*.jpg'))
             start_time = time.time()
-            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", "raw_frames", "-o", "upscaled_frames", "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"])
+            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", "raw_frames", "-o", "upscaled_frames", "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"], creationflags=subprocess.CREATE_NO_WINDOW)
             self.monitor_upscale_frames(frame_total, start_time)
         except Exception as e:
-            self.operation_label["text"] = f"Error: {str(e)}"
+            self.bottom_label["text"] = f"Error: {str(e)}"
         finally:
             self.stop_timer()
             self.enable_buttons()
@@ -536,11 +572,14 @@ class reav_ui(tk.Frame):
         if self.keep_raw_var.get() == 0:
             self.clean_directory("raw_frames")
         if not self.process_stopped:
-            self.operation_label["text"] = "Done Upscaling!"
+            self.bottom_label["text"] = "Done Upscaling!"
         if self.auto_var.get() == 1:
             self.merge_frames()
 
     def _merge_frames(self):
+        if not self.video_file:
+            self.bottom_label["text"] = "Error: No video file selected."
+            return
         self.process_stopped = False
         try:
             self.start_timer()
@@ -551,7 +590,7 @@ class reav_ui(tk.Frame):
             self.file_extension = os.path.splitext(self.video_file)[1]
             start_file_size = os.path.getsize(self.video_file)
             command, output_file_path = self.get_merge_frames_command()
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
             start_time = time.time()
             frame_count = 0
             frame_count = self.monitor_merge_frames(process, frame_count, total_frames, start_time, start_file_size)
@@ -561,17 +600,17 @@ class reav_ui(tk.Frame):
             _, _, _, percent_change, start_file_size_MB, end_file_size_MB = self.calculate_metrics(frame_count, total_frames, start_time, start_file_size, end_file_size)
             self.stop_timer()
             if not self.process_stopped:
-                self.operation_label["text"] = f"Done Merging!\nOriginal size: {start_file_size_MB:.2f}MB, Final size: {end_file_size_MB:.2f}MB, Change: {percent_change:.2f}%"
+                self.bottom_label["text"] = f"Done Merging!\nOriginal size: {start_file_size_MB:.2f}MB, Final size: {end_file_size_MB:.2f}MB, Change: {percent_change:.2f}%"
             if os.path.isfile("bin/palette001.png"):
                 os.remove("bin/palette001.png")
             if not self.keep_upscaled_var.get():
                 self.clean_directory("upscaled_frames")
             if not self.process_stopped:
-                self.console_output_label["text"] = "Output:\n" + output_file_path
+                self.middle_label["text"] = "Output:\n" + output_file_path
             self.stop_button.config(text="Open Output Folder", command=self.open_output_folder)
         except AttributeError as e:
             self.stop_timer()
-            self.operation_label["text"] = f"Error: {str(e)}"
+            self.bottom_label["text"] = f"Error: {str(e)}"
         finally:
             self.enable_buttons()
             for menu_item in ["Tools", "Options", "File"]:
@@ -618,13 +657,13 @@ class reav_ui(tk.Frame):
             def update_thumbnail(e):
                 nonlocal middle_frame_time
                 middle_frame_time = (middle_frame_time + 2) % duration
-                result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(middle_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(middle_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
                 img = Image.open(io.BytesIO(result.stdout))
                 photoImg = create_image(img)
                 self.thumbnail_label.configure(image=photoImg)
                 self.thumbnail_label.image = photoImg
 
-            result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(middle_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            result = subprocess.run(["./bin/ffmpeg.exe", "-ss", str(middle_frame_time), "-i", self.video_file, "-vframes", "1", "-f", "image2pipe", "-"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, creationflags=subprocess.CREATE_NO_WINDOW)
             img = Image.open(io.BytesIO(result.stdout))
             photoImg = create_image(img)
             self.thumbnail_label = tk.Label(image=photoImg)
@@ -635,6 +674,8 @@ class reav_ui(tk.Frame):
             ToolTip.create_tooltip(self.thumbnail_label, "Double click to open source folder\nRight click to jump forward ~2sec", 1000, 0, -35)
 
     def get_merge_frames_command(self):
+        if not self.video_file:
+            return
         frame_rate, _, _, _, _ = self.collect_stream_info()
         output_file_name = os.path.splitext(os.path.basename(self.video_file))[0] + "_UPSCALE"
         if self.output_format.get() in ['HQ gif', 'LQ gif']:
@@ -644,7 +685,7 @@ class reav_ui(tk.Frame):
         if self.output_format.get() == 'HQ gif':
             palette_path = "bin/palette%03d.png"
             command_palettegen = ["./bin/ffmpeg.exe", "-y", "-i", "upscaled_frames/frame%08d.jpg", "-vf", "palettegen", palette_path]
-            subprocess.call(command_palettegen)
+            subprocess.call(command_palettegen, creationflags=subprocess.CREATE_NO_WINDOW)
             command = ["./bin/ffmpeg.exe", "-y", "-r", str(frame_rate), "-i", "upscaled_frames/frame%08d.jpg",
                        "-i", palette_path,
                        "-filter_complex", "paletteuse",
@@ -674,7 +715,9 @@ class reav_ui(tk.Frame):
             self.scaleMenu.entryconfig(i, state=state)
 
     def run_ffprobe(self, args):
-        return subprocess.run(["./bin/ffprobe.exe"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.decode().strip()
+        if not self.video_file:
+            return
+        return subprocess.run(["./bin/ffprobe.exe"] + args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW).stdout.decode().strip()
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -683,6 +726,8 @@ class reav_ui(tk.Frame):
 #                       #
 
     def select_video_get_media_info(self):
+        if not self.video_file:
+            return
         self.total_frames = self.run_ffprobe(["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=nb_frames", "-of", "default=nokey=1:noprint_wrappers=1", self.video_file])
         if not self.total_frames.isdigit():
             _, _, self.total_frames, _, _ = self.collect_stream_info()
@@ -692,6 +737,8 @@ class reav_ui(tk.Frame):
         self.frame_rate = numerator / denominator
 
     def collect_stream_info(self):
+        if not self.video_file:
+            return
         cmd = ["-show_format", "-show_streams", self.video_file]
         ffprobe_output = self.run_ffprobe(cmd)
         r_frame_rate = re.search(r"r_frame_rate=(\d+)/(\d+)", ffprobe_output)
@@ -726,6 +773,8 @@ class reav_ui(tk.Frame):
         return frame_rate, duration, total_frames, f"{coded_width}x{coded_height}", file_size_megabytes
 
     def get_video_dimensions(self, *args):
+        if not self.video_file:
+            return
         frame_rate, _, total_frames, dimensions, file_size_megabytes = self.collect_stream_info()
         scale_factor = int(self.scale_factor.get())
         coded_width, coded_height = map(int, dimensions.split('x'))
@@ -733,9 +782,10 @@ class reav_ui(tk.Frame):
         if total_frames:
             video_length_seconds = int(total_frames) / float(frame_rate)
             video_length_time_string = str(datetime.timedelta(seconds=int(video_length_seconds)))
-            self.console_output_label["text"] = f"Video Dimensions: {dimensions}\n Upscaled:  x{scale_factor}, {new_dimensions}\n\nVideo Length: {video_length_time_string}\nTotal Frames: {total_frames}\nFile Size: {file_size_megabytes:.2f} MB"
+            self.middle_label["text"] = f"Video Dimensions: {dimensions}\n Upscaled:  x{scale_factor}, {new_dimensions}"
+            self.bottom_label["text"] = f"Video Length: {video_length_time_string}\nTotal Frames: {total_frames}\nFile Size: {file_size_megabytes:.2f} MB"
         else:
-            self.operation_label["text"] = f"Info collection failed... You can probably ignore this error."
+            self.bottom_label["text"] = f"Info collection failed... You can probably ignore this error."
 
     def calculate_metrics(self, frame_count, total_frames, start_time, start_file_size=None, end_file_size=None):
         elapsed_time = time.time() - start_time
@@ -759,8 +809,9 @@ class reav_ui(tk.Frame):
 #               #
 
     def _select_and_upscale_image(self):
+        self.process_stopped = False
         try:
-            self.filename_label["text"] = ""
+            self.top_label["text"] = ""
             input_image = filedialog.askopenfilename()
             if input_image:
                 try:
@@ -768,8 +819,8 @@ class reav_ui(tk.Frame):
                         raise IOError
                     Image.open(input_image)
                 except IOError:
-                    self.filename_label["text"] = "Invalid, or not an image type!"
-                    self.operation_label["text"] = self.sad_faces()
+                    self.top_label["text"] = "Invalid, or not an image type!"
+                    self.bottom_label["text"] = self.sad_faces()
                     return
                 filename_without_ext = os.path.splitext(input_image)[0]
                 output_image = filename_without_ext + "_UP" + os.path.splitext(input_image)[1]
@@ -779,18 +830,19 @@ class reav_ui(tk.Frame):
                     if result == 'yes':
                         os.remove(final_output)
                     else:
-                        self.filename_label["text"] = "Upscale Image: Canceled by user..."
-                        self.operation_label["text"] = self.sad_faces()
+                        self.top_label["text"] = "Upscale Image: Canceled by user..."
+                        self.bottom_label["text"] = self.sad_faces()
                         return
                 self.start_timer()
                 self.select_video_button.config(state='disabled')
                 for menu_item in ["Tools", "Options", "File"]:
                     self.menubar.entryconfig(menu_item, state="disabled")
-                with subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", input_image, "-o", output_image, "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"]) as self.process:
+                with subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", input_image, "-o", output_image, "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"], creationflags=subprocess.CREATE_NO_WINDOW) as self.process:
                     self.process.wait()
                 os.rename(output_image, final_output)
-                self.filename_label["text"] = "Output:\n" + final_output
-                self.operation_label["text"] = "Done Upscaling!"
+                self.top_label["text"] = "Output:\n" + final_output
+                if not self.process_stopped:
+                    self.bottom_label["text"] = "Done Upscaling!"
                 self.select_video_button.config(state='normal')
                 for menu_item in ["Tools", "Options", "File"]:
                     self.menubar.entryconfig(menu_item, state="normal")
@@ -799,10 +851,10 @@ class reav_ui(tk.Frame):
                 self.stop_timer()
                 self.stop_button.config(text="STOP", command=self.stop_process)
             else:
-                self.filename_label["text"] = "No image selected..."
-                self.operation_label["text"] = self.sad_faces()
+                self.top_label["text"] = "No image selected..."
+                self.bottom_label["text"] = self.sad_faces()
         except Exception as e:
-            self.operation_label["text"] = f"An error occurred: {str(e)}"
+            self.bottom_label["text"] = f"An error occurred: {str(e)}"
             self.select_video_button.config(state='normal')
             for menu_item in ["Tools", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="normal")
@@ -817,29 +869,28 @@ class reav_ui(tk.Frame):
         try:
             self.source_folder = filedialog.askdirectory()
             if not self.source_folder:
-                self.operation_label["text"] = self.sad_faces()
+                self.bottom_label["text"] = self.sad_faces()
                 self.timer_label["text"] = ""
                 raise ValueError("No source folder selected.")
-            self.batchUpscaleMenu.entryconfig(self.source_folder_index, label="Source Folder ✔️")
-            self.filename_label["text"] = "Input:\n" + self.source_folder
+            self.top_label["text"] = "Input:\n" + self.source_folder
             self.timer_label["text"] = ""
         except Exception as e:
-            self.console_output_label["text"] = str(e)
+            self.middle_label["text"] = str(e)
 
     def select_output_folder(self):
         try:
             self.output_folder = filedialog.askdirectory()
             if not self.output_folder:
-                self.operation_label["text"] = self.sad_faces()
+                self.bottom_label["text"] = self.sad_faces()
                 self.timer_label["text"] = ""
                 raise ValueError("No output folder selected.")
-            self.batchUpscaleMenu.entryconfig(self.output_folder_index, label="Output Folder ✔️")
-            self.console_output_label["text"] = "Output:\n" + self.output_folder
+            self.middle_label["text"] = "Output:\n" + self.output_folder
             self.timer_label["text"] = ""
         except Exception as e:
-            self.console_output_label["text"] = str(e)
+            self.middle_label["text"] = str(e)
 
     def _batch_upscale(self):
+        self.process_stopped = False
         try:
             self.start_timer()
             self.update_timer()
@@ -853,38 +904,61 @@ class reav_ui(tk.Frame):
             start_time = time.time()
             for menu_item in ["Tools", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="disabled")
-            self.filename_label["text"] = "Output:\n" + self.output_folder
+            self.top_label["text"] = "Output:\n" + self.output_folder
             image_files = [file for ext in ['*.jpg', '*.jpeg', '*.png', '*.bmp'] for file in glob.glob(f'{self.source_folder}/{ext}')]
             if not image_files:
-                self.filename_label["text"] = "Error: No images found in the source folder."
-                self.console_output_label["text"] = ""
-                self.operation_label["text"] = self.sad_faces()
+                self.top_label["text"] = "Error: No images found in the source folder."
+                self.middle_label["text"] = ""
+                self.bottom_label["text"] = self.sad_faces()
                 self.stop_timer()
                 self.timer_label["text"] = ""
                 return
             frame_total = len(image_files)
-            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", self.source_folder, "-o", self.output_folder, "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"])
+            self.process = subprocess.Popen(["./bin/realesrgan-ncnn-vulkan.exe", "-i", self.source_folder, "-o", self.output_folder, "-n", self.upscale_model.get(), "-s", self.scale_factor.get(), "-f", "jpg"], creationflags=subprocess.CREATE_NO_WINDOW)
             self.monitor_batch_upscale(frame_total, start_time)
-            for menu_item in ["Tools", "Options", "File"]:
-                self.menubar.entryconfig(menu_item, state="normal")
-            self.operation_label["text"] = "Done Upscaling!"
+            if not self.process_stopped:
+                self.bottom_label["text"] = "Done Upscaling!"
             self.stop_timer()
         except Exception as e:
-            self.operation_label["text"] = f"Error:\n{str(e)}"
+            self.bottom_label["text"] = f"Error:\n{str(e)}"
             self.stop_timer()
         finally:
             for menu_item in ["Tools", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="normal")
 
+    def batch_upscale_menu(self):
+        if hasattr(self, 'dialog') and self.dialog.winfo_exists():
+            self.dialog.lift()
+        else:
+            self.dialog = Toplevel(self.master)
+            self.dialog.transient(self.master)
+            self.dialog.focus_force()
+            self.dialog.title("Batch Upscale Menu")
+            self.dialog.attributes('-toolwindow', True)
+            self.dialog.resizable(False, False)
+            window_width = 200
+            window_height = 130
+            self.position_dialog(self.dialog, window_width, window_height)
+            button_data = [
+                ("Select: Source Folder", self.select_source_folder),
+                ("Select: Output Folder (optional)", self.select_output_folder),
+                ("Clear Folder Choice", self.clear_folder_choice),
+                ("Run: Batch Upscale", self.batch_upscale)
+            ]
+            for i, (text, command) in enumerate(button_data):
+                frame = Frame(self.dialog)
+                frame.pack(fill=BOTH, expand=True)
+                button = Button(frame, text=text, command=command, anchor="w")
+                button.pack(fill=BOTH, expand=True)
+                button.bind("<Enter>", lambda _, b=button: b.config(background='#e5f3ff'))
+                button.bind("<Leave>", lambda _, b=button: b.config(background='SystemButtonFace'))
+
     def clear_folder_choice(self):
         self.source_folder = None
         self.output_folder = None
-        self.batchUpscaleMenu.entryconfig(self.source_folder_index, label="Source Folder")
-        self.batchUpscaleMenu.entryconfig(self.output_folder_index, label="Output Folder")
-        self.select_video_button.config(state='normal')
-        self.filename_label["text"] = "Batch folder selection cleared."
-        self.console_output_label["text"] = "..."
-        self.operation_label["text"] = ""
+        self.top_label["text"] = "Batch folder selection cleared."
+        self.middle_label["text"] = "..."
+        self.bottom_label["text"] = ""
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -907,7 +981,7 @@ class reav_ui(tk.Frame):
             else:
                 resize_factor = int(resize_input)
                 if resize_factor > 500:
-                    result = messagebox.askquestion("Large Scale Factor", "You entered a large scale factor. Are you sure you want to continue?", icon='warning')
+                    result = messagebox.askquestion(f"Large Scale Factor", f"You entered a large scale factor of: {resize_factor}\n\nAre you sure you want to continue?", icon='warning')
                     if result == 'yes':
                         self.resize_factor.set(resize_factor)
                         self.scale_frames()
@@ -918,16 +992,21 @@ class reav_ui(tk.Frame):
                     break
 
     def _scale_frames(self):
+        self.process_stopped = False
         try:
-            self.start_timer()
-            self.update_timer()
             for menu_item in ["Tools", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="disabled")
-                image_total = len(glob.glob(f'{self.scale_path}/*.jpg'))
-                if not os.listdir(self.scale_path):
-                    self.operation_label["text"] = "No images found!"
-                    return
-                image_count = 0
+            image_files = glob.glob(f'{self.scale_path}/*.jpg')
+            image_total = len(image_files)
+            if not image_files:
+                self.top_label["text"] = "No images found!"
+                self.bottom_label["text"] = self.sad_faces()
+                self.stop_timer()
+                self.timer_label["text"] = ""
+                return
+            self.start_timer()
+            self.update_timer()
+            image_count = 0
             if ',' in self.resize_resolution.get():
                 new_width, new_height = map(int, self.resize_resolution.get().split(','))
             else:
@@ -935,27 +1014,31 @@ class reav_ui(tk.Frame):
                 new_width, new_height = None, None
             start_time = time.time()
             for filename in os.listdir(self.scale_path):
-                img = Image.open(os.path.join(self.scale_path, filename))
-                if new_width and new_height:
-                    img = img.resize((new_width, new_height))
+                file_path = os.path.join(self.scale_path, filename)
+                if os.path.isfile(file_path):
+                    img = Image.open(file_path)
+                    if new_width and new_height:
+                        img = img.resize((new_width, new_height))
+                    else:
+                        img = img.resize((int(img.size[0]*resize_factor), int(img.size[1]*resize_factor)))
+                    img.save(file_path, "JPEG", quality=100)
+                    image_count += 1
+                    fps, eta_str, percent_complete, _, _, _ = self.calculate_metrics(image_count, image_total, start_time)
+                    self.middle_label["text"] = f"Scaled {image_count:08d}, of {image_total:08d}, {percent_complete:.2f}%\n ETA {eta_str}, FPS {fps:.2f}"
                 else:
-                    img = img.resize((int(img.size[0]*resize_factor), int(img.size[1]*resize_factor)))
-                img.save(os.path.join(self.scale_path, filename), "JPEG", quality=100)
-                image_count += 1
-                elapsed_time = time.time() - start_time
-                fps = image_count / elapsed_time
-                eta_seconds = elapsed_time * (image_total - image_count) / image_count
-                eta_hms = time.strftime("%H:%M:%S", time.gmtime(eta_seconds))
-                percent_complete = (image_count / image_total) * 100
-                self.console_output_label["text"] = f"Scaled {image_count:08d}, of {image_total:08d}, {percent_complete:.2f}%\n ETA {eta_hms}, FPS {fps:.2f}"
-            self.operation_label["text"] = "Done Resizing!"
-        except Exception as e:
-            self.operation_label["text"] = f"Error:\n{str(e)}"
-        finally:
+                    pass
+            if not self.process_stopped:
+                self.bottom_label["text"] = "Done Resizing!"
             self.stop_timer()
+        except Exception as e:
+            self.top_label["text"] = self.sad_faces()
+            self.bottom_label["text"] = f"Error:\n{str(e)}"
+            self.stop_timer()
+        finally:
             self.stop_button.config(text="STOP", command=self.stop_process)
             for menu_item in ["Tools", "Options", "File"]:
                 self.menubar.entryconfig(menu_item, state="normal")
+
 
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
@@ -1004,7 +1087,7 @@ class reav_ui(tk.Frame):
             if os.path.isfile(f'{directory}/{filename}'):
                 os.remove(f'{directory}/{filename}')
 
-    def toolsmenu_clear_frames(self, directory):
+    def fileMenu_clear_frames(self, directory):
         result = messagebox.askquestion("Delete Frames", "Are you sure you want to delete all frames in {}?".format(directory), icon='warning')
         if result == 'yes':
             for filename in os.listdir(directory):
@@ -1033,17 +1116,42 @@ class reav_ui(tk.Frame):
 # Misc Functions #
 #                #
 
+    # Used to position new windows beside the main window.
+    def position_dialog(self, dialog, window_width, window_height):
+        root_x = self.master.winfo_rootx()
+        root_y = self.master.winfo_rooty()
+        root_width = self.master.winfo_width()
+        position_right = root_x + root_width
+        position_top = root_y + -50
+        dialog.geometry(f"{window_width}x{window_height}+{position_right}+{position_top}")
+
+    def copy_to_clipboard(self, event):
+        if self.select_video_button.cget('state') == 'disabled':
+            return
+        widget = event.widget
+        text = widget.cget("text")
+        if text != "":
+            widget.clipboard_clear()
+            widget.clipboard_append(text)
+            original_text = text
+            widget.config(text="Copied!")
+            widget.after(250, lambda: widget.config(text=original_text))
+
     def sad_faces(self):
         string_list = ("( ◎ _ ◎ )", "(╥╯ᗝ╰╥)", "(✖_✖)", "└[ ☉ ل͟ ☉ ]┘", "( ͡ ಠ ʖ̯ ͡ಠ)", "(-`д´-)", "๑(•̀_•́ )ﾉ", "ʕ ͡ಠ ‸ ͡ಠʔ", "[¬＿¬]", "(ಠ︹ಠ)",
                        "(*︵*)", "(ᵔ╭╮ᵔ)", "(-_-)", "(ಥ╭╮ಥ)", "(ᗒ༎︵༎ᗕ)", "(◞╭╮◟)", "(¬︹¬)", "┗(⊙_☉)┘", "(⊚_☉)", "(◈ дﾟ◈)",
-                       "〘ఠ _ ఠ〙", "(҂◡╭╮◡)", "⤜(⚆︵⚆)⤏", "|⊙▂⊙|", "(ó︹ò ｡)", "(◡︵◡〞)", "•︵•", "(〃╯︵╰〃)", "(◞ ‸ ◟〟)", "ヽ(☉_☉ )〴"
-                       "(ಥ﹏ಥ)", "(⏓﹏⏓)", "(ㆆ _ ㆆ)", "(> _ <)", "(⚆ᗝ⚆)", "⊙︿⊙", "˚‧º·(ᵒ﹏ᵒ)‧º·˚", "¯\_(⊙︿⊙)_/¯", "⁀⊙﹏☉⁀", "¯\_(⊙_ʖ⊙)_/¯"
+                       "〘ఠ _ ఠ〙", "(҂◡╭╮◡)", "⤜(⚆︵⚆)⤏", "|⊙▂⊙|", "(ó︹ò ｡)", "(◡︵◡〞)", "•︵•", "(〃╯︵╰〃)", "(◞ ‸ ◟〟)", "ヽ(☉_☉ )〴",
+                       "(ಥ﹏ಥ)", "(⏓﹏⏓)", "(ㆆ _ ㆆ)", "(> _ <)", "(⚆ᗝ⚆)", "⊙︿⊙", "˚‧º·(ᵒ﹏ᵒ)‧º·˚", "¯\_(⊙︿⊙)_/¯", "⁀⊙﹏☉⁀", "¯\_(⊙_ʖ⊙)_/¯",
                        "( ⚆ _ ⚆ )", "(╥﹏╥)", "( T ʖ̯ T)", "(ー_ーゞ", "( º﹃º )", "╮(╯_╰)╭", "(;⌣̀_⌣́)", "꒰•⌓•꒱", "(.づ◡﹏◡)づ.", "◕︵◕")
         pseudo_random_number = hash(str(time.time())) % len(string_list)
         return string_list[pseudo_random_number]
 
-    def open_about_window(self):
-        self.about_window = AboutWindow(self.master)
+    # Handles button highlights.
+    def mouse_enter(self, event):
+        if event.widget['state'] == 'normal':
+            event.widget['background'] = '#e5f3ff'
+    def mouse_leave(self, event):
+        event.widget['background'] = 'SystemButtonFace'
 
     def disable_buttons(self):
         self.select_video_button.config(state='disabled')
@@ -1057,11 +1165,18 @@ class reav_ui(tk.Frame):
         self.merge_button.config(state='normal')
         self.upscale_button.config(state='normal')
 
+    def open_about_window(self):
+        if self.about_window is None or not self.about_window.winfo_exists():
+            self.about_window = AboutWindow(self.master)
+            self.position_dialog(self.about_window, 450, 550)
+        else:
+            self.about_window.lift()
+
     def stop_process(self):
         if self.process:
             self.process.kill()
             self.process_stopped = True
-            self.operation_label["text"] = "Process Stopped!"
+            self.bottom_label["text"] = "Process Stopped!"
             if self.auto_var.get() == 1:
                 self.auto_var.set(0)
 
@@ -1079,6 +1194,17 @@ class reav_ui(tk.Frame):
             self.clean_directory("upscaled_frames")
         root.destroy()
 
+def set_icon(root):
+    if getattr(sys, 'frozen', False):
+        application_path = sys._MEIPASS
+    elif __file__:
+        application_path = os.path.dirname(__file__)
+    icon_path = os.path.join(application_path, "icon.ico")
+    try:
+        root.iconbitmap(icon_path)
+    except TclError:
+        pass
+
 ##########################################################################################################################################################################
 ##########################################################################################################################################################################
 #           #
@@ -1086,10 +1212,11 @@ class reav_ui(tk.Frame):
 #           #
 
 root = tk.Tk()
-root.title('v1.11 - R-ESRGAN-AnimeVideo-UI')
-root.geometry('520x600')
-root.resizable(False, False)
+root.title('v1.12 - R-ESRGAN-AnimeVideo-UI')
 app = reav_ui(master=root)
+root.geometry("520x650")
+root.resizable(False, False)
+set_icon(root)
 app.mainloop()
 
 ##########################################################################################################################################################################
@@ -1100,32 +1227,22 @@ app.mainloop()
 
 '''
 
-v1.11 changes:
+v1.12 changes:
 
 - New:
-  - `Tools Menu`: This new menu is now where you access Batch and Single image upscale, along with Resize.
-  - `clear folder`: Added a confirmation dialog to these File options.
-  - `Batch Upscale`: Selecting an output folder is now optional. Images will output to "source/output" if no folder is selected.
-  - You can now right click the thumbnail to progress the displayed frame by ~2sec.
-  - Gif files are now animated in the UI, updated every 120ms (may not display at full speed).
-  - When a video is selected, its size, current dimensions, the selected scale factor, and the upscaled dimensions are displayed.
-  - Surprised or sad text faces are displayed for mild errors. (ó︹ò ｡) (e.g., no video selected, invalid file type).
-  - `Keep Frames` options are now always available. Sometimes you may wish to change your mind during a long process
+  - Batch upscale is now a mini menu. However, it's just buttons for now.
+  - Terminal windows no longer pop up during operation.
+  - Pillow is now installed more gracefully than before.
+  - You can now right-click labels to copy their text.
+  - Small UI tweaks.
+
 <br>
 
 - Fixed:
-  - Improved robustness of media info collection.
-    - Total frames are now approximated for video streams that don't declare their total frames. This can lead to a slight discrepancy with the reported extracted frames. All frames will be extracted regardless.
-  - Invisible tooltips no longer obstruct the checkboxes.
-  - The chosen upscale model is now applied to both Batch and Single image upscale.
-  - `Batch Upscale`: The elapsed timer now correctly updates in the UI.
-  - `Resize`: No longer displays "Done Resizing!" immediately after running.
-  - `Extract Frames`: This process can now be stopped.
-  - Double-clicking is now required on the thumbnail to open the video directory.
-    - This helps to prevent accidental openings when clicking the window.
-  - Opening the video directory by clicking the thumbnail is less prone to issues.
-    - The script now uses "os.startfile" instead of "subprocess.Popen 'explorer'", preventing multiple folder windows from opening when the folder is already open.
-  - Stopping a process now properly updates the ui instead of stating "Done! ..."
+  - Stopping the frame extraction process now reports the correct number of frames extracted.
+  - An error when 'Upscale Model' or 'Upscale Factor' are selected before selecting a video.
+  - An error when running 'Resize' and non-image files or folders were present in the resize path.
+  - Other small UI fixes.
 
 '''
 
@@ -1138,10 +1255,9 @@ v1.11 changes:
 '''
 
 - Todo
-  - Batch Upscale should be a new window popup.
   - The user should be able to pre-select a resize operation (raw_frames/upscaled_frames), so they can use auto and frame resize at the same time.
+  - Try and process variable frame rate video files.
 
 - Tofix
   - When merging: Basic timer sometimes stops working at some point. When the process is done, the timer correctly displays the time taken, but during operation, the timer displays 0.
-
 '''
