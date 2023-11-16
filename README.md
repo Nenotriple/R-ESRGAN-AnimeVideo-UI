@@ -56,44 +56,22 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.11 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.11-Hotfix)
+[v1.12 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.12)
 
 - New:
-  - `Tools Menu`: This new menu is now where you access Batch and Single image upscale, along with Resize.
-  - `clear folder`: Added a confirmation dialog to these File options.
-  - `Batch Upscale`: Selecting an output folder is now optional. Images will output to "source/output" if no folder is selected.
-  - You can now right click the thumbnail to progress the displayed frame by ~2sec.
-  - Gif files are now animated in the UI, updated every 120ms (may not display at full speed).
-  - When a video is selected, its size, current dimensions, the selected scale factor, and the upscaled dimensions are displayed.
-  - Surprised or sad text faces are displayed for mild errors. (ó︹ò ｡) (e.g., no video selected, invalid file type).
-  - `Keep Frames` options are now always available. Sometimes you may wish to change your mind during a long process
+  - Batch upscale is now a mini menu. However, it's just buttons for now.
+  - Terminal windows no longer pop up during operation.
+  - Pillow is now installed more gracefully than before.
+  - You can now right-click labels to copy their text.
+  - Small UI tweaks.
+
 <br>
 
 - Fixed:
-  - Improved robustness of media info collection.
-    - Total frames are now approximated for video streams that don't declare their total frames. This can lead to a slight discrepancy with the reported extracted frames. All frames will be extracted regardless.
-  - Invisible tooltips no longer obstruct the checkboxes.
-  - The chosen upscale model is now applied to both Batch and Single image upscale.
-  - `Batch Upscale`: The elapsed timer now correctly updates in the UI.
-  - `Resize`: No longer displays "Done Resizing!" immediately after running.
-  - `Extract Frames`: This process can now be stopped.
-  - Double-clicking is now required on the thumbnail to open the video directory.
-    - This helps to prevent accidental openings when clicking the window.
-  - Opening the video directory by clicking the thumbnail is less prone to issues.
-    - The script now uses "os.startfile" instead of "subprocess.Popen 'explorer'", preventing multiple folder windows from opening when the folder is already open.
-  - Stopping a process now properly updates the ui instead of stating "Done! ..."
-
-___
-[v1.10 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.10)
-
-- New:
-  - You can now use other upscale models. `RealESRGAN_General_x4_v3, realesrgan-x4plus, realesrgan-x4plus-anime`
-  - 1x scaling is now supported. Note: This is not recommended. [See comparison.](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/Comparisons)
-  - You can now output any video as a gif and export high-quality or low-quality gifs. See [this section of the wiki](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/Gif-creation-and-settings) for details on getting the most out of this feature.
-  - Percent, ETA, and FPS are now displayed during the image scaling process.
-  - You can now resize extracted or upscaled frames by percentage or exact resolution.  
-- Fixed:
-  - Buttons are properly grayed out after merging.
+  - Stopping the frame extraction process now reports the correct number of frames extracted.
+  - An error when 'Upscale Model' or 'Upscale Factor' are selected before selecting a video.
+  - An error when running 'Resize' and non-image files or folders were present in the resize path.
+  - Other small UI fixes.
   
 ## 👥 **Credits**
 
