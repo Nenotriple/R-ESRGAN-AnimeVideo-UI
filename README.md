@@ -39,7 +39,7 @@ Other upscale models are popular, but [realesr-animevideov3](https://github.com/
 - While it does have somewhat heavy smoothing, it doesn't totally destroy fine details like grain.
 - In my opinion, it has superb line reconstruction compared to others like `RealESRGAN_x4plus_anime_6B`
 
-Check out these [comparisons.✨](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/Comparisons)
+Check out these [comparisons.✨](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/wiki/%E2%9A%96%EF%B8%8F-Comparisons)
 
 ## 🚩 Requirements
 
