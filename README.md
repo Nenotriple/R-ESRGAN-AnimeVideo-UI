@@ -75,6 +75,6 @@ The `pillow` library will be downloaded and installed (if not already available)
   
 ## 👥 **Credits**
 
-ffmpeg-6.0-essentials: https://ffmpeg.org/
+ffmpeg-6.1-essentials: https://ffmpeg.org/
 
 Real-ESRGAN_portable: https://github.com/xinntao/Real-ESRGAN#portable-executable-files-ncnn
