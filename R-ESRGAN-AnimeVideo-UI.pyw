@@ -590,7 +590,7 @@ class reav_ui(tk.Frame):
             self.file_extension = os.path.splitext(self.video_file)[1]
             start_file_size = os.path.getsize(self.video_file)
             command, output_file_path = self.get_merge_frames_command()
-            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
+            process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8", universal_newlines=True, creationflags=subprocess.CREATE_NO_WINDOW)
             start_time = time.time()
             frame_count = 0
             frame_count = self.monitor_merge_frames(process, frame_count, total_frames, start_time, start_file_size)
