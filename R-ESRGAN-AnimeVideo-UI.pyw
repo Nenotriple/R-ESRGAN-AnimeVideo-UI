@@ -127,7 +127,7 @@ class AboutWindow(tk.Toplevel):
         self.credits_label.pack(pady=5)
         self.made_by_label = tk.Label(self, text="(2023) Created by: Nenotriple", font=("Arial", 10))
         self.made_by_label.pack(pady=5)
-        self.credits_text = tk.Label(self, text= ("ffmpeg-6.1-essentials: ffmpeg.org\nReal-ESRGAN_portable: github.com/xinntao/Real-ESRGAN\n Thank you!"), width=50)
+        self.credits_text = tk.Label(self, text= ("ffmpeg-6.0-essentials: ffmpeg.org\nReal-ESRGAN_portable: github.com/xinntao/Real-ESRGAN\n Thank you!"), width=50)
         self.credits_text.pack(pady=5)
 
     def open_url(self):
