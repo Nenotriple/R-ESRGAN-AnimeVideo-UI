@@ -8,7 +8,7 @@ from urllib.request import urlopen, urlretrieve
 # URLs to download from
 urls = [
     "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
-    "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip"
+    "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-6.0-essentials_build.zip"
 ]
 
 # Files to extract and their destination paths
@@ -25,8 +25,8 @@ files_to_extract = [
         ("models/realesr-animevideov3-x4.param", "bin/models")
     ],
     [
-        ("ffmpeg-6.1-essentials_build/bin/ffmpeg.exe", "bin"),
-        ("ffmpeg-6.1-essentials_build/bin/ffprobe.exe", "bin")
+        ("ffmpeg-6.0-essentials_build/bin/ffmpeg.exe", "bin"),
+        ("ffmpeg-6.0-essentials_build/bin/ffprobe.exe", "bin")
     ]
 ]
 # Handles zip file download
