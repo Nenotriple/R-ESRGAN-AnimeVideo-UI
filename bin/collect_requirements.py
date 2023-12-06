@@ -25,8 +25,8 @@ files_to_extract = [
         ("models/realesr-animevideov3-x4.param", "bin/models")
     ],
     [
-        ("ffmpeg-6.0-essentials_build/bin/ffmpeg.exe", "bin"),
-        ("ffmpeg-6.0-essentials_build/bin/ffprobe.exe", "bin")
+        ("ffmpeg-6.1-essentials_build/bin/ffmpeg.exe", "bin"),
+        ("ffmpeg-6.1-essentials_build/bin/ffprobe.exe", "bin")
     ]
 ]
 # Handles zip file download
