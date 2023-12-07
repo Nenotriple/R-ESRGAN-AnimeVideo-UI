@@ -56,22 +56,16 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.12 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.12)
-
-- New:
-  - Batch upscale is now a mini menu. However, it's just buttons for now.
-  - Terminal windows no longer pop up during operation.
-  - Pillow is now installed more gracefully than before.
-  - You can now right-click labels to copy their text.
-  - Small UI tweaks.
-
-<br>
+[v1.13 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.13)
 
 - Fixed:
-  - Stopping the frame extraction process now reports the correct number of frames extracted.
-  - An error when 'Upscale Model' or 'Upscale Factor' are selected before selecting a video.
-  - An error when running 'Resize' and non-image files or folders were present in the resize path.
-  - Other small UI fixes.
+  - Fixed ffmpeg download/collection. [#c8cd865][c8cd865]
+  - Fixed error that would occur when certain non-standard characters are used for filenames. [#53b7e42][53b7e42]
+
+Big thank's to [@lawleo](https://github.com/lawleo) for their contributions!
+
+[c8cd865]: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/commit/c8cd8652a71f0bb1c775cdee766ba2b60bf29ea7
+[53b7e42]: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/commit/53b7e42060312734a6ee66834693bd49db69c4cc
   
 ## 👥 **Credits**
 
