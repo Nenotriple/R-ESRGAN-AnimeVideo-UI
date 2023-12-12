@@ -56,23 +56,64 @@ files_to_extract = [
                     ]
                     ]
 
-# Check if all files exist
-all_files_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file, destination in files)
+# Initialize the lists of missing files
+missing_files = []
+missing_files_to_extract = []
 
-# Check if all files to extract exist
+# Check if all files exist in the destination directories
+all_files_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file, destination in files)
 all_files_to_extract_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file_list in files_to_extract for file, destination in file_list)
 
-# If not all files or files to extract exist, find the missing ones
+# If not all files exist, find the missing ones
 if not all_files_exist or not all_files_to_extract_exist:
-    missing_files = [os.path.basename(file) for file, destination in files if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
-    missing_files_to_extract = [os.path.basename(file) for file_list in files_to_extract for file, destination in file_list if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
+    # Get the list of missing files and their destinations
+    missing_files = [(file, destination) for file, destination in files if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
+    missing_files_to_extract = [(file, destination) for file_list in files_to_extract for file, destination in file_list if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
+
+    # Print the names of the missing files
     print("\nMissing files:")
-    for file in missing_files + missing_files_to_extract:
-        print(file)
-    missing_files_str = '\n'.join(missing_files + missing_files_to_extract)
+    for file, _ in missing_files + missing_files_to_extract:
+        print(os.path.basename(file))
+
+    # Ask the user if they want to download the missing files
+    missing_files_str = '\n'.join([os.path.basename(file) for file, _ in missing_files + missing_files_to_extract])
     download_requirements = messagebox.askyesno("Download Required", f"The following files need to be downloaded.\n\n{missing_files_str}\n\nThe files will download in the background, and the app will open automatically when ready.")
+
+    # If the user doesn't want to download the files, exit the program
     if not download_requirements:
         sys.exit()
+
+# Function to download a file from a URL to a specific path
+def download_file(url, path):
+    # Get the filename from the URL
+    filename = url.split("/")[-1]
+    filepath = os.path.join(path, filename)
+
+    # If the file already exists, no need to download it again
+    if os.path.exists(filepath):
+        return
+
+    # Send a GET request to the URL
+    response = requests.get(url, stream=True)
+
+    # Get the total size of the file from the headers
+    total_size_in_bytes= int(response.headers.get('content-length', 0))
+    block_size = 1024
+    total_mb = total_size_in_bytes / (1024 * 1024)
+
+    # Open the file in write mode and download it chunk by chunk
+    with open(filepath, 'wb') as file:
+        downloaded_mb = 0
+        for data in response.iter_content(block_size):
+            downloaded_mb += len(data) / (1024 * 1024)
+            file.write(data)
+            # Print the download progress
+            print(f"\rDownloading: {filename} {downloaded_mb:.2f}MB / {total_mb:.2f}MB", end='')
+    print()
+
+# Download all the missing files
+for file, path in missing_files + missing_files_to_extract:
+    download_file(file, path)
 
 # Function to download a zip file
 def download_zip(count, block_size, total_size, filename):
@@ -94,24 +135,3 @@ for url, files in zip(urls, files_to_extract):
                     with zfile.open(file) as zf, open(destination_path, 'wb') as f:
                         f.write(zf.read())
         os.remove(zip_file_path)
-
-# Function to download a file
-def download_file(url, path):
-    filename = url.split("/")[-1]
-    filepath = os.path.join(path, filename)
-    if os.path.exists(filepath):
-        return
-    response = requests.get(url, stream=True)
-    total_size_in_bytes= int(response.headers.get('content-length', 0))
-    block_size = 1024
-    total_mb = total_size_in_bytes / (1024 * 1024)
-    with open(filepath, 'wb') as file:
-        downloaded_mb = 0
-        for data in response.iter_content(block_size):
-            downloaded_mb += len(data) / (1024 * 1024)
-            file.write(data)
-            print(f"\rDownloading: {filename} {downloaded_mb:.2f}MB / {total_mb:.2f}MB", end='')
-    print()
-
-for url, path in files:
-    download_file(url, path)
