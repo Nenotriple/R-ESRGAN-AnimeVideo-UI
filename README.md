@@ -11,8 +11,8 @@
 
 ## 📝 Usage
 
-- Run the portable excutable file or the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
-- Wait for the required files to downloaded. ~200mb ffmpeg, ffprobe realesrgan-ncnn-vulkan-20220424-windows, models from this repo.
+- Run the portable executable file or the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
+- Wait for the required files to downloaded. ~200mb - ffmpeg, ffprobe realesrgan-ncnn-vulkan-20220424-windows, models from this repo.
 - Select a video file that you want to upscale.
 - Follow the steps labeled in the UI.
 
