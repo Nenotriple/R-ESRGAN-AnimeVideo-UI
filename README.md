@@ -11,9 +11,10 @@
 
 ## 📝 Usage
 
-- Run the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
--  Select a video file that you want to upscale.
--  Follow the steps labeled in the UI.
+- Run the portable excutable file or the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
+- Wait for the required files to downloaded. ~200mb ffmpeg, ffprobe realesrgan-ncnn-vulkan-20220424-windows, models from this repo.
+- Select a video file that you want to upscale.
+- Follow the steps labeled in the UI.
 
 **Note:** The `Upscale` and `Merge` operations delete the previous frames by default. If you want to keep the frames, make sure to enable the `Keep Frames` option.
 
@@ -24,7 +25,7 @@ After Extracting or Upscaling, you have the option to scale the frames to any si
 - Other Uses:
   - Batch Upscale a folder of images.
   - Upscale a single image.
-  - You can also use these model for upscaling: `RealESRGAN_General_x4_3`, `realesrgan-x4plus`, `realesrgan-x4plus-anime`
+  - You can also use these models for upscaling: `RealESRGAN_General_x4_3`, `realesrgan-x4plus`, `realesrgan-x4plus-anime`
   - Output any video as a gif, and/or output gif as mp4.
 
 
