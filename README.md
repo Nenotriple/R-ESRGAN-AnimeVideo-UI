@@ -43,6 +43,10 @@ Check out these [comparisons.✨](https://github.com/Nenotriple/R-ESRGAN-AnimeVi
 
 ## 🚩 Requirements
 
+You don't need to worry about anything if you're using the [portable/executable](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases?q=executable&expanded=true) version.
+
+___
+
 **You must have Python 3.10+ installed to the system PATH**
 
 **Running the script will automatically fulfill all requirements.**
@@ -56,16 +60,13 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.13 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.13)
+[v1.15 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.15)
 
-- Fixed:
-  - Fixed ffmpeg download/collection. [#c8cd865][c8cd865]
-  - Fixed error that would occur when certain non-standard characters are used for filenames. [#53b7e42][53b7e42]
-
-Big thank's to [@lawleo](https://github.com/lawleo) for their contributions!
-
-[c8cd865]: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/commit/c8cd8652a71f0bb1c775cdee766ba2b60bf29ea7
-[53b7e42]: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/commit/53b7e42060312734a6ee66834693bd49db69c4cc
+- New:
+  - First fully portable release!
+  - Tools and options are now displayed in a convenient tabbed interface. This makes using tools like Batch Upscale much easier!
+  - Progress bar added.
+  - **Tons** of additional small tweaks and fixes.
   
 ## 👥 **Credits**
 
