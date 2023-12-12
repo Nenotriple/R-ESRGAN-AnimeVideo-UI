@@ -6,7 +6,7 @@
 <p align="center">Upscale your videos using the R-ESRGAN AnimeVideo model</p>
 
 <p align="center">
-  <img src="https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/assets/70049990/8b6a27b7-07dc-4820-8455-477a3839fe62)" alt="app_sample">
+  <img src="https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/assets/70049990/e3554a6b-fbb8-4606-9caf-8da2cd065a88" alt="app_sample">
 </p>
 
 ## 📝 Usage
