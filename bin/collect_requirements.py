@@ -16,122 +16,100 @@ More info here: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI
 """
 
 import os
-import sys
-import zipfile
 import requests
-from urllib.request import urlretrieve
-from tkinter import messagebox
-
-files = [
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesr-animevideov3-x1.bin", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesr-animevideov3-x1.param", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/RealESRGAN_General_x4_v3.bin", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/RealESRGAN_General_x4_v3.param", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus-anime.bin", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus-anime.param", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus.bin", "bin/models"),
-        ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus.param", "bin/models")
-        ]
+import zipfile
+from io import BytesIO
 
 urls = [
-        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
-        "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-6.0-essentials_build.zip"
-        ]
+    "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip",
+    "https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-6.0-essentials_build.zip"
+]
 
 files_to_extract = [
-                    [
-                    ("realesrgan-ncnn-vulkan.exe", "bin"),
-                    ("vcomp140d.dll", "bin"),
-                    ("vcomp140.dll", "bin"),
-                    ("models/realesr-animevideov3-x2.bin", "bin/models"),
-                    ("models/realesr-animevideov3-x3.bin", "bin/models"),
-                    ("models/realesr-animevideov3-x4.bin", "bin/models"),
-                    ("models/realesr-animevideov3-x2.param", "bin/models"),
-                    ("models/realesr-animevideov3-x3.param", "bin/models"),
-                    ("models/realesr-animevideov3-x4.param", "bin/models")
-                    ],
-                    [
-                    ("ffmpeg-6.0-essentials_build/bin/ffmpeg.exe", "bin"),
-                    ("ffmpeg-6.0-essentials_build/bin/ffprobe.exe", "bin")
-                    ]
-                    ]
+    [
+        ("realesrgan-ncnn-vulkan.exe", "bin"),
+        ("vcomp140d.dll", "bin"),
+        ("vcomp140.dll", "bin"),
+        ("models/realesr-animevideov3-x2.bin", "bin/models"),
+        ("models/realesr-animevideov3-x3.bin", "bin/models"),
+        ("models/realesr-animevideov3-x4.bin", "bin/models"),
+        ("models/realesr-animevideov3-x2.param", "bin/models"),
+        ("models/realesr-animevideov3-x3.param", "bin/models"),
+        ("models/realesr-animevideov3-x4.param", "bin/models")
+    ],
+    [
+        ("ffmpeg-6.0-essentials_build/bin/ffmpeg.exe", "bin"),
+        ("ffmpeg-6.0-essentials_build/bin/ffprobe.exe", "bin")
+    ]
+]
 
-# Initialize the lists of missing files
-missing_files = []
-missing_files_to_extract = []
+files = [
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesr-animevideov3-x1.bin", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesr-animevideov3-x1.param", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/RealESRGAN_General_x4_v3.bin", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/RealESRGAN_General_x4_v3.param", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus-anime.bin", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus-anime.param", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus.bin", "bin/models"),
+    ("https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/raw/main/bin/models/realesrgan-x4plus.param", "bin/models")
+]
 
-# Check if all files exist in the destination directories
-all_files_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file, destination in files)
-all_files_to_extract_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file_list in files_to_extract for file, destination in file_list)
+class Downloader:
+    def __init__(self, urls=None, files_to_extract=None, files=None):
+        self.urls = urls
+        self.files_to_extract = files_to_extract
+        self.files = files
 
-# If not all files exist, find the missing ones
-if not all_files_exist or not all_files_to_extract_exist:
-    # Get the list of missing files and their destinations
-    missing_files = [(file, destination) for file, destination in files if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
-    missing_files_to_extract = [(file, destination) for file_list in files_to_extract for file, destination in file_list if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
+    def all_files_exist(self, files):
+        missing_files = []
+        for file in files:
+            filename, path = file
+            filepath = os.path.join(path, filename.split('/')[-1])
+            if not os.path.exists(filepath):
+                missing_files.append(filepath)
+        return missing_files
 
-    # Print the names of the missing files
-    print("\nMissing files:")
-    for file, _ in missing_files + missing_files_to_extract:
-        print(os.path.basename(file))
+    def download_and_extract_files(self):
+        if self.urls and self.files_to_extract:
+            for url, files in zip(self.urls, self.files_to_extract):
+                missing_files = self.all_files_exist(files)
+                if missing_files:
+                    print(f"Missing files: {missing_files}")
+                    self.download_and_extract_file(url, files)
 
-    # Ask the user if they want to download the missing files
-    missing_files_str = '\n'.join([os.path.basename(file) for file, _ in missing_files + missing_files_to_extract])
-    download_requirements = messagebox.askyesno("Download Required", f"The following files need to be downloaded.\n\n{missing_files_str}\n\nThe files will download in the background, and the app will open automatically when ready.")
+    def download_and_extract_file(self, url, files):
+        response = requests.get(url)
+        with zipfile.ZipFile(BytesIO(response.content)) as z:
+            for file in files:
+                filename, path = file
+                filepath = os.path.join(path, filename.split('/')[-1])
+                if not os.path.exists(filepath):
+                    if filename in z.namelist():
+                        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+                        with open(filepath, 'wb') as f:
+                            f.write(z.read(filename))
+                        print(f"Extracted {filename} to {filepath}")
+                    else:
+                        print(f"{filename} not found in the zip file")
 
-    # If the user doesn't want to download the files, exit the program
-    if not download_requirements:
-        sys.exit()
+    def download_files(self):
+        if self.files:
+            for url, path in self.files:
+                filename = url.split("/")[-1]
+                filepath = os.path.join(path, filename)
+                if not os.path.exists(filepath):
+                    print(f"Missing file: {filepath}")
+                    self.download_file(url, path)
 
-# Function to download a file from a URL to a specific path
-def download_file(url, path):
-    # Get the filename from the URL
-    filename = url.split("/")[-1]
-    filepath = os.path.join(path, filename)
+    def download_file(self, url, path):
+        filename = url.split("/")[-1]
+        filepath = os.path.join(path, filename)
+        os.makedirs(path, exist_ok=True)
+        response = requests.get(url)
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
+        print(f"Downloaded {filename} to {filepath}")
 
-    # If the file already exists, no need to download it again
-    if os.path.exists(filepath):
-        return
-
-    # Send a GET request to the URL
-    response = requests.get(url, stream=True)
-
-    # Get the total size of the file from the headers
-    total_size_in_bytes= int(response.headers.get('content-length', 0))
-    block_size = 1024
-    total_mb = total_size_in_bytes / (1024 * 1024)
-
-    # Open the file in write mode and download it chunk by chunk
-    with open(filepath, 'wb') as file:
-        downloaded_mb = 0
-        for data in response.iter_content(block_size):
-            downloaded_mb += len(data) / (1024 * 1024)
-            file.write(data)
-            # Print the download progress
-            print(f"\rDownloading: {filename} {downloaded_mb:.2f}MB / {total_mb:.2f}MB", end='')
-    print()
-
-# Download all the missing files
-for file, path in missing_files + missing_files_to_extract:
-    download_file(file, path)
-
-# Function to download a zip file
-def download_zip(count, block_size, total_size, filename):
-    downloaded_mb = count * block_size / (1024 * 1024)
-    total_mb = total_size / (1024 * 1024)
-    print(f"\rDownloading: {filename} {downloaded_mb:.2f}MB / {total_mb:.2f}MB", end='')
-# Loop over all urls and corresponding files to extract
-for url, files in zip(urls, files_to_extract):
-    all_files_exist = all(os.path.exists(os.path.join(destination, os.path.basename(file))) for file, destination in files)
-    if not all_files_exist:
-        missing_files = [os.path.join(destination, os.path.basename(file)) for file, destination in files if not os.path.exists(os.path.join(destination, os.path.basename(file)))]
-        zip_file_path, _ = urlretrieve(url, filename=url.split('/')[-1], reporthook=lambda count, block_size, total_size: download_zip(count, block_size, total_size, url.split('/')[-1]))
-        with zipfile.ZipFile(zip_file_path, 'r') as zfile:
-            for file, destination in files:
-                filename_only = os.path.basename(file)
-                destination_path = os.path.join(destination, filename_only)
-                if not os.path.exists(destination_path):
-                    os.makedirs(os.path.dirname(destination_path), exist_ok=True)
-                    with zfile.open(file) as zf, open(destination_path, 'wb') as f:
-                        f.write(zf.read())
-        os.remove(zip_file_path)
+downloader = Downloader(urls, files_to_extract, files)
+downloader.download_and_extract_files()
+downloader.download_files()
