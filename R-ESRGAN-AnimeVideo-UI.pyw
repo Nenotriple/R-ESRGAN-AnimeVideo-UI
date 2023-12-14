@@ -9,7 +9,7 @@
 
 Description:
 -------------
-Display an image and text file side-by-side for easy manual caption editing.
+Easily upscale your videos and images using R-ESRGAN AI models.
 
 More info here: https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI
 
