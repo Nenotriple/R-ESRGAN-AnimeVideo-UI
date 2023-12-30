@@ -61,13 +61,20 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.15 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.15)
+[v1.16 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.16)
 
 - New:
-  - First fully portable release!
-  - Tools and options are now displayed in a convenient tabbed interface. This makes using tools like Batch Upscale much easier!
-  - Progress bar added.
-  - **Tons** of additional small tweaks and fixes.
+  - `Create Sample` You can now create a short sample trimmed from the middle of the selected video.
+    - Sample duration is adjustable in "Video > Extra Settings"
+  - `Output Bitrate` You can now output video with a fixed bitrate, or select Auto (default) and it works like before.
+  - Auto Resize changes: You can enter values in 3 ways.
+    - Percentage = 10%, 50%, 200%
+    - Factor = x0.10, x0.5, x2
+    - Exact Resolution = 100x100 or 200,200
+  - You can now toggle the video thumbnail to update every 2 seconds.
+    - The ability to right-click the thumbnail to "seek" forward has been removed.
+  - Added keyboard shortcuts to menubar commands. (press alt)
+  - You can now add your own converted models to the "bin\models" folder. [#11](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/issues/11), Thank you [@SaturnRingssss](https://github.com/SaturnRingssss)
   
 ## 👥 **Credits**
 
