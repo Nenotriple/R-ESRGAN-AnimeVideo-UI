@@ -61,20 +61,43 @@ The `pillow` library will be downloaded and installed (if not already available)
 
 ## 📜 Version History
 
-[v1.16 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.16)
+[v1.17 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.16)
 
 - New:
-  - `Create Sample` You can now create a short sample trimmed from the middle of the selected video.
-    - Sample duration is adjustable in "Video > Extra Settings"
-  - `Output Bitrate` You can now output video with a fixed bitrate, or select Auto (default) and it works like before.
-  - Auto Resize changes: You can enter values in 3 ways.
-    - Percentage = 10%, 50%, 200%
-    - Factor = x0.10, x0.5, x2
-    - Exact Resolution = 100x100 or 200,200
-  - You can now toggle the video thumbnail to update every 2 seconds.
-    - The ability to right-click the thumbnail to "seek" forward has been removed.
-  - Added keyboard shortcuts to menubar commands. (press alt)
-  - You can now add your own converted models to the "bin\models" folder. [#11](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/issues/11), Thank you [@SaturnRingssss](https://github.com/SaturnRingssss)
+  - A terminal window now opens with the app to display various info/errors etc.
+    - This is really helpful during the initial startup while downloading files, and checking previous completed processes, etc.
+  - An [hstack][hstack] video is now created during the "Create Sample" process.
+  - You can now set an audio bitrate.
+  - You can now enter an exact audio or video bitrate value.
+  -  New preset for Audio/Video Bitrate options, `Auto From Source`.
+    - Regular "Auto" mode allows FFmpeg to choose a bitrate when merging. This generally results in lower quality video and audio.
+    - When you select "Auto From Source" for "Video Bitrate", it will use source video bitrate and add 1500.
+    - When you select "Auto From Source" for "Audio Bitrate", it will use the source audio bitrate.
+  - `Batch Resize Image` Added to the "Image" tab. From here you can select a folder and resize images to any resolution.
+    - There's also an option to resize a single image.
+  - You can now define a start time for creating the preview sample,
+  - Output videos are now encoded with a keyframe every 10 video frames. This results in much smoother seeking. but larger file size.
+  - You can now skip the upscale process. This is useful if you just want to resize a video
+
+
+<br>
+
+
+- Fixed:
+  - Video frame rate info collection is now more robust.
+  - Fix an issue where the app would remain running if closed during "auto > upscale"
+  - Handle an error when "Toggle Animated Thumbnail" doesn't work.
+  - Fixed error preventing multipliers like "x0.25", "x4" from working as a resize input.
+  - Fixed error that would occur after first selecting an invalid filetype, then selecting a valid filetype.
+
+
+- Other changes:
+  - `Batch Image Upscale` Added back to the Tools menu. This just opens the Image tab.
+  - Renamed "R-ESRGAN-AnimeVideo-UI.pyw" to "R-ESRGAN-AnimeVideo-UI.py"
+  - Moved "icon.ico" to "bin" folder.
+
+
+[hstack]: https://ffmpeg.org/ffmpeg-filters.html#hstack-1
   
 ## 👥 **Credits**
 
