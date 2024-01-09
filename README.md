@@ -70,9 +70,9 @@ The `pillow` library will be downloaded and installed (if not already available)
   - You can now set an audio bitrate.
   - You can now enter an exact audio or video bitrate value.
   -  New preset for Audio/Video Bitrate options, `Auto From Source`.
-    - Regular "Auto" mode allows FFmpeg to choose a bitrate when merging. This generally results in lower quality video and audio.
-    - When you select "Auto From Source" for "Video Bitrate", it will use source video bitrate and add 1500.
-    - When you select "Auto From Source" for "Audio Bitrate", it will use the source audio bitrate.
+     - Regular "Auto" mode allows FFmpeg to choose a bitrate when merging. This generally results in lower quality video and audio.
+     - When you select "Auto From Source" for "Video Bitrate", it will use source video bitrate and add 1500.
+     - When you select "Auto From Source" for "Audio Bitrate", it will use the source audio bitrate.
   - `Batch Resize Image` Added to the "Image" tab. From here you can select a folder and resize images to any resolution.
     - There's also an option to resize a single image.
   - You can now define a start time for creating the preview sample,
