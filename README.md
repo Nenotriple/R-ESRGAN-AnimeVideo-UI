@@ -12,7 +12,6 @@
 ## 📝 Usage
 
 - Run the portable executable file or the `R-ESRGAN-AnimeVideo-UI.pyw` script to launch the UI.
-- Wait for the required files to downloaded. ~200mb - ffmpeg, ffprobe realesrgan-ncnn-vulkan-20220424-windows, models from this repo.
 - Select a video file that you want to upscale.
 - Follow the steps labeled in the UI.
 
@@ -44,63 +43,41 @@ Check out these [comparisons.✨](https://github.com/Nenotriple/R-ESRGAN-AnimeVi
 
 ## 🚩 Requirements
 
-You don't need to worry about anything if you're using the [portable/executable](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases?q=executable&expanded=true) version.
-
-___
+>[!TIP]
+> You don't need to worry about these requirements if you're using the [portable/executable](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases?q=executable&expanded=true) version.
 
 **You must have Python 3.10+ installed to the system PATH**
 
-**Running the script will automatically fulfill all requirements.**
+You will need `Pillow`.
 
-The `pillow` library will be downloaded and installed (if not already available) upon first launch.
+To install Pillow: `pip install pillow`
 
-`ffmpeg` and `ffprobe` will be downloaded upon first launch.
+`ffmpeg.exe` and `ffprobe.exe` needs to be in the `bin` folder. (v6.0+)
 
-`realesrgan-ncnn-vulkan-20220424-windows.zip` and the required models will be downloaded upon launch.
+`realesrgan-ncnn-vulkan-20220424-windows.zip` must be extracted to the `bin` folder. [Download](https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-windows.zip)
 
 
 ## 📜 Version History
 
-[v1.17 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.16)
-
-- New:
-  - A terminal window now opens with the app to display various info/errors etc.
-    - This is really helpful during the initial startup while downloading files, and checking previous completed processes, etc.
-  - An [hstack][hstack] video is now created during the "Create Sample" process.
-  - You can now set an audio bitrate.
-  - You can now enter an exact audio or video bitrate value.
-  -  New preset for Audio/Video Bitrate options, `Auto From Source`.
-     - Regular "Auto" mode allows FFmpeg to choose a bitrate when merging. This generally results in lower quality video and audio.
-     - When you select "Auto From Source" for "Video Bitrate", it will use source video bitrate and add 1500.
-     - When you select "Auto From Source" for "Audio Bitrate", it will use the source audio bitrate.
-  - `Batch Resize Image` Added to the "Image" tab. From here you can select a folder and resize images to any resolution.
-    - There's also an option to resize a single image.
-  - You can now define a start time for creating the preview sample,
-  - Output videos are now encoded with a keyframe every 10 video frames. This results in much smoother seeking. but larger file size.
-  - You can now skip the upscale process. This is useful if you just want to resize a video
-
-
-<br>
-
+[v1.18 changes:](https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI/releases/tag/v1.18)
 
 - Fixed:
-  - Video frame rate info collection is now more robust.
-  - Fix an issue where the app would remain running if closed during "auto > upscale"
-  - Handle an error when "Toggle Animated Thumbnail" doesn't work.
-  - Fixed error preventing multipliers like "x0.25", "x4" from working as a resize input.
-  - Fixed error that would occur after first selecting an invalid filetype, then selecting a valid filetype.
+  - Fixed issue with downloading file requirements. The executable version is now bundled with all the needed resources.
+  - Fix output folder selection in Batch Upscale function not working.
+  - Fix "Skip Upscale" checkbutton permanently disabling the "Keep upscaled frames" checkbutton.
+    - Also fixed button alignment.
+  - Fixed "Batch Resize Images" error when attempting to resize a folder of images containing non-image files.
+    - "Batch Resize Images" now saves resized images to a new "output" folder.
 
 
 - Other changes:
-  - `Batch Image Upscale` Added back to the Tools menu. This just opens the Image tab.
-  - Renamed "R-ESRGAN-AnimeVideo-UI.pyw" to "R-ESRGAN-AnimeVideo-UI.py"
-  - Moved "icon.ico" to "bin" folder.
+  - (script) Pillow is no longer automatically installed on startup.
 
 
-[hstack]: https://ffmpeg.org/ffmpeg-filters.html#hstack-1
-  
 ## 👥 **Credits**
 
 ffmpeg-6.0-essentials: https://ffmpeg.org/
 
 Real-ESRGAN_portable: https://github.com/xinntao/Real-ESRGAN#portable-executable-files-ncnn
+
+I highly appreciate any contributions, thank you!
