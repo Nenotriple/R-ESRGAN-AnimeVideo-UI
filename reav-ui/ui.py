@@ -3,6 +3,7 @@
 
 # Standard library imports
 import ctypes
+import os
 
 # Standard GUI
 import tkinter as tk
@@ -48,6 +49,7 @@ class UIManager:
         WINDOW_MIN_HEIGHT = 300
         # Setup properties
         _set_appid(self.app)
+        _set_app_icon(self.app)
         self.app.title(WINDOW_TITLE)
         self.app.minsize(WINDOW_MIN_WIDTH, WINDOW_MIN_HEIGHT)
         # Center window
@@ -58,6 +60,26 @@ class UIManager:
         self.app.geometry(f'{WINDOW_WIDTH}x{WINDOW_HEIGHT}+{x}+{y}')
         # Close protocol
         self.app.protocol("WM_DELETE_WINDOW", self.app.on_closing)
+
+
+def _set_appid(app: 'Main'):
+    """Set the application user model ID for Windows taskbar grouping."""
+    try:
+        myappid = 'Nenotriple.reav-ui'
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+    except AttributeError:
+        # Not Windows
+        pass
+
+
+def _set_app_icon(app: 'Main'):
+    """Set the application icon from icon.ico file in app path."""
+    try:
+        icon_path = os.path.join(app.app_path, 'icon.ico')
+        if os.path.exists(icon_path):
+            app.iconbitmap(icon_path)
+    except Exception:
+        pass
 
 
 # Create a global instance
@@ -79,15 +101,6 @@ def _setup_main_frame(app: 'Main'):
     app.main_frame.grid_rowconfigure(0, weight=1)
     app.main_frame.grid_columnconfigure(0, weight=1)
 
-
-def _set_appid(app: 'Main'):
-    """Set the application user model ID for Windows taskbar grouping."""
-    try:
-        myappid = 'Nenotriple.reav-ui'
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-    except AttributeError:
-        # Not Windows
-        pass
 
 
 #endregion
