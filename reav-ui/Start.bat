@@ -5,11 +5,11 @@ setlocal enabledelayedexpansion
 REM ======================================================
 REM Python Virtual Environment Setup and Script Launcher
 REM Created by: github.com/Nenotriple
-set "SCRIPT_VERSION=1.01"
+set "SCRIPT_VERSION=1.02"
 REM ======================================================
 
 
-REM Configuration
+REM Configuration (see README.md for details)
 set "PYTHON_SCRIPT=app.py"
 set "REQUIREMENTS_FILE=requirements.txt"
 
@@ -20,11 +20,12 @@ set "AUTO_CLOSE_CONSOLE=TRUE"
 set "ENABLE_COLORS=TRUE"
 set "QUIET_MODE=FALSE"
 set "SETUP_ONLY=FALSE"
+set "SET_VENV_HIDDEN=TRUE"
 
 REM Runtime Variables
 set "SCRIPT_DIR=%~dp0"
 set "PIP_TIMEOUT=30"
-set "VENV_DIR=venv"
+set "VENV_DIR=.venv"
 
 
 REM ==============================================
@@ -100,6 +101,7 @@ exit /b 0
     if exist "%VENV_DIR%" rmdir /s /q "%VENV_DIR%" 2>nul
     call :LogInfo "Creating virtual environment: %SCRIPT_DIR%%VENV_DIR%"
     python -m venv "%VENV_DIR%" || (call :LogError "Failed to create virtual environment" & exit /b 1)
+    if "%SET_VENV_HIDDEN%"=="TRUE" call :SetVenvHidden
     call :LogOK "Virtual environment created"
 exit /b 0
 
@@ -219,4 +221,9 @@ exit /b 0
         echo Press any key to exit...
         pause >nul
     )
+exit /b 0
+
+
+:SetVenvHidden
+    attrib +h "%VENV_DIR%" 2>nul && call :LogInfo "Virtual environment directory set as hidden" || call :LogWarn "Failed to set directory as hidden"
 exit /b 0
