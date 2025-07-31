@@ -12,7 +12,7 @@ from tkinterdnd2 import TkinterDnD
 BaseWindow = TkinterDnD.Tk
 
 # Local imports
-from utils.ffmpeg_utils import ffmpeg_manager
+from utils.ffmpeg_utils import FFmpegManager
 from ui.ui_manager import UIManager
 
 
@@ -21,6 +21,8 @@ class Main(BaseWindow):
     def __init__(self) -> None:
         super().__init__()
         self.init_variables()
+        self.ffmpeg_manager = FFmpegManager(self.app_path)
+        self.ffmpeg_available = self.ffmpeg_manager.is_available
         self.ui_manager = UIManager(self)
         self.ui_manager.create_interface()
         self.ui_manager.setup_window()
@@ -34,12 +36,10 @@ class Main(BaseWindow):
         self.status_label: Optional[ttk.Label] = None
         self.main_frame: Optional[ttk.Frame] = None
         self.notebook: Optional[ttk.Notebook] = None
-        # App state
+        # App vars
         self.is_compiled = self.check_if_compiled()
-        # App paths
         self.app_path = self.get_app_path()
-        # FFmpeg availability
-        self.ffmpeg_available = ffmpeg_manager.is_available
+
 
 
     def check_if_compiled(self) -> bool:

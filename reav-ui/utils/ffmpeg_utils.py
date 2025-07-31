@@ -14,26 +14,31 @@ import ffmpeg
 
 class FFmpegManager:
     """Manager class for FFmpeg operations."""
-    def __init__(self):
+    def __init__(self, app_path: str):
         """Initialize FFmpeg manager with path detection."""
+        self.app_path = app_path
         self.ffmpeg_path = self._find_executable("ffmpeg")
         self.ffprobe_path = self._find_executable("ffprobe")
-        self.is_available = self.ffmpeg_path is not None and self.ffprobe_path is not None
+        self.ffplay_path = self._find_executable("ffplay")
+        self.is_available = (
+            self.ffmpeg_path is not None and
+            self.ffprobe_path is not None and
+            self.ffplay_path is not None
+        )
+        print(f"FFmpeg available: {self.is_available}")
 
 
     def _get_base_path(self) -> str:
         """Get base path for executable search."""
-        if getattr(sys, 'frozen', False):
-            return sys._MEIPASS
-        else:
-            return os.path.dirname(__file__)
+        # Use app_path provided by Main
+        return self.app_path
 
 
     def _find_executable(self, exe_name: str) -> Optional[str]:
-        """Find executable path (generic method for both ffmpeg and ffprobe)."""
+        """Find executable path (generic method for ffmpeg, ffprobe, ffplay)."""
         base_path = self._get_base_path()
-        # Check local resrgan folder first
-        local_exe = os.path.join(base_path, "resrgan", f"{exe_name}.exe")
+        # Look in .\bin\ffmpeg relative to app_path
+        local_exe = os.path.join(base_path, "bin", "ffmpeg", f"{exe_name}.exe")
         if os.path.exists(local_exe):
             return local_exe
         # Check system PATH
@@ -119,7 +124,3 @@ class FFmpegManager:
     def get_supported_formats(self) -> List[str]:
         """Get list of supported video formats."""
         return ['.mp4', '.avi', '.mkv', '.mov', '.wmv', '.webm', '.m4v', '.gif']
-
-
-# Global instance for easy access
-ffmpeg_manager = FFmpegManager()
