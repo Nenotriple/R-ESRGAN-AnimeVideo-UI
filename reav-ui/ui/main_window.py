@@ -45,8 +45,10 @@ class MainWindow:
 
 
     def _center_window(self):
+        self.app.update_idletasks()
         screen_width = self.app.winfo_screenwidth()
         screen_height = self.app.winfo_screenheight()
         x = (screen_width - self.WINDOW_WIDTH) // 2
         y = (screen_height - self.WINDOW_HEIGHT) // 2
         self.app.geometry(f'{self.WINDOW_WIDTH}x{self.WINDOW_HEIGHT}+{x}+{y}')
+        self.app.update()
