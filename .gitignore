@@ -166,3 +166,7 @@ icon.ico
 /.github
 settings.cfg
 *.lnk
+reav-ui/bin/ffmpeg/ffmpeg.exe
+reav-ui/bin/ffmpeg/ffplay.exe
+reav-ui/bin/ffmpeg/ffprobe.exe
+reav-ui/bin/ffmpeg/LICENSE.txt
