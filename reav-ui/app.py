@@ -7,18 +7,21 @@ from typing import Optional
 import tkinter as tk
 from tkinter import ttk
 
+# Drag and Drop
+from tkinterdnd2 import TkinterDnD
+BaseWindow = TkinterDnD.Tk
+
 # Local imports
-from ffmpeg_utils import ffmpeg_manager
-import ui
+from utils.ffmpeg_utils import ffmpeg_manager
+from ui.ui_manager import UIManager
 
 
-
-class Main(tk.Tk):
+class Main(BaseWindow):
     """Main class and handler of reav-ui."""
     def __init__(self) -> None:
         super().__init__()
         self.init_variables()
-        self.ui_manager = ui.UIManager(self)
+        self.ui_manager = UIManager(self)
         self.ui_manager.create_interface()
         self.ui_manager.setup_window()
 
