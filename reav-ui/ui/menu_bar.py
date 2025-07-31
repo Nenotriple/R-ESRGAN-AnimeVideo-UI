@@ -1,9 +1,12 @@
 import tkinter as tk
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
 
 class MenuBar:
     """Manages the application menu bar."""
-    def __init__(self, app):
+    def __init__(self, app: "Main"):
         self.app = app
         self.menubar = None
 

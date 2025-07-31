@@ -1,12 +1,17 @@
 import os
 from tkinter import ttk
 import tkinter as tk
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
+
 from utils.drag_drop_widget import DragDropWidget
 
 
 class SelectionTab:
     """Manages the Selection tab interface."""
-    def __init__(self, app):
+    def __init__(self, app: "Main"):
         self.app = app
         self.frame = None
         self.drag_drop_widget = None

@@ -1,13 +1,20 @@
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
+
 from .main_window import MainWindow
 from .menu_bar import MenuBar
 from .selection_tab import SelectionTab
 from .settings_tab import SettingsTab
 from .status_bar import StatusBar
 
+import tkinter as tk
+from tkinter import messagebox
+
 
 class UIManager:
     """Manages the user interface for the application."""
-    def __init__(self, app=None):
+    def __init__(self, app: "Main"):
         self.app = app
         self.main_window = None
         self.menubar = None
@@ -16,7 +23,7 @@ class UIManager:
         self.status_bar = None
 
 
-    def initialize(self, app):
+    def initialize(self, app: "Main"):
         self.app = app
 
 
@@ -53,3 +60,20 @@ class UIManager:
         self.selection_tab.create(notebook)
         self.settings_tab.create(notebook)
         self.app.notebook = notebook
+
+
+    def show_ffmpeg_download_dialog(self) -> bool:
+        """
+        Show a dialog asking user if they want to download FFmpeg.
+
+        Returns:
+            bool: True if user confirms download, False if they cancel
+        """
+        result = messagebox.askokcancel(
+            "FFmpeg Required",
+            "FFmpeg is required for video processing but was not found on your system.\n\n"
+            "Press OK to download and install FFmpeg locally.\n"
+            "(This will download approximately ~80MB)",
+            icon="question"
+        )
+        return result

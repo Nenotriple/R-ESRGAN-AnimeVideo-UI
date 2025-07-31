@@ -1,6 +1,9 @@
 import ctypes
 import os
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
 
 class MainWindow:
     """Manages the main application window configuration."""
@@ -11,7 +14,7 @@ class MainWindow:
     WINDOW_MIN_HEIGHT = 300
 
 
-    def __init__(self, app):
+    def __init__(self, app: "Main"):
         self.app = app
 
 

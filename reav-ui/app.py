@@ -21,25 +21,34 @@ class Main(BaseWindow):
     def __init__(self) -> None:
         super().__init__()
         self.init_variables()
-        self.ffmpeg_manager = FFmpegManager(self.app_path)
-        self.ffmpeg_available = self.ffmpeg_manager.is_available
         self.ui_manager = UIManager(self)
         self.ui_manager.create_interface()
         self.ui_manager.setup_window()
+        self.init_ffmpeg()
 
 
     def init_variables(self) -> None:
         """Initialize application variables and UI refs."""
-        # Application variables
-        self.status_var = tk.StringVar(value="Ready")
-        # UI components, initialized in ui.UIManager
-        self.status_label: Optional[ttk.Label] = None
-        self.main_frame: Optional[ttk.Frame] = None
-        self.notebook: Optional[ttk.Notebook] = None
         # App vars
         self.is_compiled = self.check_if_compiled()
         self.app_path = self.get_app_path()
+        # UI vars
+        self.status_var = tk.StringVar(value="Ready")
+        self.status_progress_var = tk.DoubleVar(value=0.0)
+        # UI components, initialized in ui.UIManager
+        self.main_frame: Optional[ttk.Frame] = None
+        self.notebook: Optional[ttk.Notebook] = None
 
+
+    def init_ffmpeg(self):
+        self.ffmpeg_manager = FFmpegManager(self)
+        self.ffmpeg_available = self.ffmpeg_manager.is_available
+        if not self.ffmpeg_available:
+            user_confirmed = self.ui_manager.show_ffmpeg_download_dialog()
+            if user_confirmed:
+                self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status)
+            else:
+                self.on_closing()
 
 
     def check_if_compiled(self) -> bool:

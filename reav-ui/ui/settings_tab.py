@@ -1,9 +1,12 @@
 from tkinter import ttk
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
 
 class SettingsTab:
     """Manages the Settings tab interface."""
-    def __init__(self, app):
+    def __init__(self, app: "Main"):
         self.app = app
         self.frame = None
 
