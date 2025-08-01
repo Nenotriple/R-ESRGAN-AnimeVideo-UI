@@ -11,8 +11,8 @@ if TYPE_CHECKING:
 class MainWindow:
     """Manages the main application window configuration."""
     WINDOW_TITLE = "Reav-UI"
-    WINDOW_WIDTH = 600
-    WINDOW_HEIGHT = 400
+    WINDOW_WIDTH = 1000
+    WINDOW_HEIGHT = 500
     WINDOW_MIN_WIDTH = 400
     WINDOW_MIN_HEIGHT = 300
 

@@ -32,6 +32,8 @@ class Main(BaseWindow):
         # App vars
         self.is_compiled = self.check_if_compiled()
         self.app_path = self.get_app_path()
+        self.supported_image_types = [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff", ".tif", ".gif", ".ico", ".avif"]
+        self.supported_video_types = [".mp4", ".webm", ".mkv", ".avi", ".mov", ".flv", ".wmv", ".m4v"]
         # UI vars
         self.status_var = tk.StringVar(value="Ready")
         self.status_progress_var = tk.DoubleVar(value=0.0)
@@ -49,8 +51,13 @@ class Main(BaseWindow):
             user_confirmed = self.ui_manager.show_ffmpeg_download_dialog(missing_files=missing_filenames)
             if user_confirmed:
                 self.ui_manager.set_state("disabled")
-                self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status)
-                self.ui_manager.set_state("normal")
+
+                def on_ffmpeg_download_complete(msg: str):
+                    # Called after download/extract
+                    if self.ffmpeg_manager.is_available:
+                        self.ui_manager.set_state("normal")
+
+                self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status, completion_callback=on_ffmpeg_download_complete)
             else:
                 self.on_closing()
 

@@ -57,13 +57,17 @@ class FFmpegManager:
         return missing_files
 
 
-    def download_and_install_ffmpeg(self, progress_callback: Optional[Callable[[str], None]] = None) -> None:
+    def download_and_install_ffmpeg(
+        self,
+        progress_callback: Optional[Callable[[str], None]] = None,
+        completion_callback: Optional[Callable[[str], None]] = None
+    ) -> None:
         """
-        Download and install FFmpeg to the bin/ffmpeg directory in a separate thread.
-        Only installs missing files if some are already present.
+        Download and install FFmpeg to the bin/ffmpeg directory.
 
         Args:
             progress_callback: Optional callback for progress updates
+            completion_callback: Optional callback called when download/extract is finished
 
         Note:
             This method starts a background thread and returns immediately.
@@ -73,11 +77,15 @@ class FFmpegManager:
             if progress_callback:
                 progress_callback("Download already in progress...")
             return
-        self._download_thread = threading.Thread(target=self._download_and_install_thread, args=(progress_callback,), daemon=True)
+        self._download_thread = threading.Thread(target=self._download_and_install_thread, args=(progress_callback, completion_callback), daemon=True)
         self._download_thread.start()
 
 
-    def _download_and_install_thread(self, progress_callback: Optional[Callable[[str], None]] = None) -> None:
+    def _download_and_install_thread(
+        self,
+        progress_callback: Optional[Callable[[str], None]] = None,
+        completion_callback: Optional[Callable[[str], None]] = None
+    ) -> None:
         """Method to download and install FFmpeg."""
         url = "https://github.com/GyanD/codexffmpeg/releases/download/6.0/ffmpeg-6.0-essentials_build.zip"
         temp_zip_path = os.path.join(self.app_path, "bin/ffmpeg/ffmpeg-6.0-essentials_build.zip")
@@ -87,6 +95,10 @@ class FFmpegManager:
             if progress_callback:
                 # Schedule the callback on the main thread
                 self.app.after(0, lambda: progress_callback(message))
+
+        def safe_completion_callback(message: str):
+            if completion_callback:
+                self.app.after(0, lambda: completion_callback(message))
 
         def download_progress_callback(downloaded: int, total_size: int):
             """Thread-safe wrapper for download progress"""
@@ -101,7 +113,6 @@ class FFmpegManager:
             # Check which files are missing
             missing_files = self._get_missing_files()
             if not missing_files:
-                safe_callback("All FFmpeg files are already present!")
                 self.is_available = True
                 return
             safe_callback(f"Missing {len(missing_files)} FFmpeg files. Downloading...")
@@ -126,6 +137,7 @@ class FFmpegManager:
             self.is_available = self._check_availability()
             if self.is_available:
                 safe_callback("FFmpeg installation completed successfully!")
+                safe_completion_callback("FFmpeg installation completed successfully!")
             else:
                 safe_callback("FFmpeg installation completed but verification failed")
         except Exception as e:
