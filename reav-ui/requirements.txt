@@ -1,5 +1,4 @@
 Pillow==11.0.0
 ffmpeg-python==0.2.0
 tkinterdnd2>=0.3.0
-requests
 git+https://github.com/Nenotriple/TkToolTip.git@main
