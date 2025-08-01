@@ -90,28 +90,24 @@ class FFmpegManager:
             # Schedule the progress update on the main thread
             self.app.after(0, lambda: self.app.ui_manager.status_bar.update_progress(downloaded, total_size))
             percent = downloaded * 100 // total_size if total_size else 0
-            self.app.after(0, lambda: self.app.ui_manager.status_bar.update_status(f"Downloading FFmpeg... {percent}%"))
+            self.app.after(0, lambda: self.app.ui_manager.status_bar.update_status(f"Downloading 'ffmpeg-6.0-essentials_build.zip'... {percent}%"))
 
         try:
             # Create directories if they don't exist
             os.makedirs(self.ffmpeg_dir, exist_ok=True)
-
             # Check which files are missing
             missing_files = self._get_missing_files()
             if not missing_files:
                 safe_callback("All FFmpeg files are already present!")
                 self.is_available = True
                 return
-
             safe_callback(f"Missing {len(missing_files)} FFmpeg files. Downloading...")
-
             # Download the zip file
             download_success = download_file(url, temp_zip_path, progress_callback=download_progress_callback)
             if not download_success:
                 safe_callback("Failed to download FFmpeg")
                 return
             safe_callback("Download complete. Extracting missing files...")
-
             # Extract only the missing files
             extract_success = extract_zip(
                 temp_zip_path,
