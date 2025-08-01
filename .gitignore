@@ -169,6 +169,9 @@ settings.cfg
 reav-ui/bin/ffmpeg/ffmpeg.exe
 reav-ui/bin/ffmpeg/ffplay.exe
 reav-ui/bin/ffmpeg/ffprobe.exe
+reav-ui/bin/ffmpeg/-ffmpeg.exe
+reav-ui/bin/ffmpeg/-ffplay.exe
+reav-ui/bin/ffmpeg/-ffprobe.exe
 reav-ui/bin/ffmpeg/LICENSE
 reav-ui/bin/ffmpeg/LICENSE.txt
 reav-ui/bin/resrgan/LICENSE.txt
