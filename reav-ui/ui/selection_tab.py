@@ -6,7 +6,7 @@ from tkinter import ttk
 import tkinter as tk
 
 # Local imports
-from utils.drag_drop_widget import DragDropWidget
+from ui.widget import DragDropWidget
 
 # Type hinting
 from typing import TYPE_CHECKING
@@ -35,13 +35,7 @@ class SelectionTab:
         self.title_label = ttk.Label(self.frame, text="Video Selection", font=('Arial', 14, 'bold'))
         self.title_label.grid(row=0, column=0, pady=(10, 5), sticky=(tk.W, tk.E))
         # Drop target
-        self.drag_drop_widget = DragDropWidget(
-            self.frame,
-            on_drop=self._on_file_dropped,
-            text="📁 Drop video files here\n(or click to browse)",
-            drop_text="📂 Release to drop video file here",
-            success_text="✓ Video file loaded!\nDrop another file here"
-        )
+        self.drag_drop_widget = DragDropWidget(self.frame, on_drop=self._on_file_dropped)
         self.drag_drop_widget.grid(row=1, column=0, padx=20, pady=10, sticky=(tk.W, tk.E, tk.N, tk.S))
         # File info
         self.file_info_label = ttk.Label(self.frame, text="No file selected")
@@ -65,5 +59,7 @@ class SelectionTab:
             state: 'normal' or 'disabled'
         """
         self.drag_drop_widget.set_state(state)
+        self.title_label.config(state=state)
+        self.file_info_label.config(state=state)
         self.title_label.config(state=state)
         self.file_info_label.config(state=state)

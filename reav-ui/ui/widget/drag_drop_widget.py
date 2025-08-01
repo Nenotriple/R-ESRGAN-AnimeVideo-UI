@@ -33,21 +33,20 @@ class DragDropWidget(tk.Label):
     Args:
         parent: The parent widget
         on_drop: Callback function called when a file is dropped (receives file_path)
-        on_drag_enter: Optional callback for drag enter event
-        on_drag_leave: Optional callback for drag leave event
         text: Default text to display
-        drop_text: Text to display during drag operation
-        success_text: Text to display after successful drop
         browse_dialog: Whether to enable click-to-browse functionality
         state: Initial state of the widget ('normal' or 'disabled')
         **kwargs: Additional arguments passed to tk.Label
     """
 
-    def __init__(self, parent, on_drop=None, on_drag_enter=None, on_drag_leave=None,
+    def __init__(self,
+                 parent,
+                 on_drop=None,
                  text="📁 Drop files here\n(or click to browse)",
-                 drop_text="📂 Release to drop file here",
-                 success_text="✓ File received!\nDrop another file here",
-                 browse_dialog=True, state='normal', **kwargs):
+                 browse_dialog=True,
+                 state='normal',
+                 **kwargs
+                 ):
         # Default styling
         default_kwargs = {
             'bg': '#f0f0f0',
@@ -64,11 +63,7 @@ class DragDropWidget(tk.Label):
         super().__init__(parent, text=text, **default_kwargs)
         # Store configuration
         self.on_drop_callback = on_drop
-        self.on_drag_enter_callback = on_drag_enter
-        self.on_drag_leave_callback = on_drag_leave
         self.default_text = text
-        self.drop_text = drop_text
-        self.success_text = success_text
         self.browse_dialog = browse_dialog
         self.state = state
         self.setup_drag_drop()
@@ -83,8 +78,6 @@ class DragDropWidget(tk.Label):
             if self.state == 'normal':
                 self.drop_target_register(DND_FILES)
                 self.dnd_bind('<<Drop>>', self.on_drop)
-                self.dnd_bind('<<DragEnter>>', self.on_drag_enter)
-                self.dnd_bind('<<DragLeave>>', self.on_drag_leave)
         except Exception as e:
             print(f"Warning: Could not setup drag and drop: {e}")
 
@@ -102,34 +95,8 @@ class DragDropWidget(tk.Label):
                 # Call user callback if provided
                 if self.on_drop_callback:
                     self.on_drop_callback(file_path)
-                # Animate success
-                self.animate_success()
         except Exception as e:
             print(f"Error handling file drop: {e}")
-
-
-    def on_drag_enter(self, event):
-        """Handle drag enter event"""
-        if self.state == 'disabled':
-            return
-        self.config(bg="#cce7ff", text=self.drop_text)
-        if self.on_drag_enter_callback:
-            self.on_drag_enter_callback(event)
-
-
-    def on_drag_leave(self, event):
-        """Handle drag leave event"""
-        if self.state == 'disabled':
-            return
-        self.reset_appearance()
-        if self.on_drag_leave_callback:
-            self.on_drag_leave_callback(event)
-
-
-    def animate_success(self):
-        """Animate successful file drop"""
-        self.config(bg="#ccffcc", text=self.success_text)
-        self.after(2000, self.reset_appearance)
 
 
     def reset_appearance(self):
@@ -154,8 +121,6 @@ class DragDropWidget(tk.Label):
             # Call user callback if provided
             if self.on_drop_callback:
                 self.on_drop_callback(file_path)
-            # Animate success
-            self.animate_success()
 
 
     def set_on_drop_callback(self, callback):
