@@ -44,7 +44,10 @@ class Main(BaseWindow):
         self.ffmpeg_manager = FFmpegManager(self)
         self.ffmpeg_available = self.ffmpeg_manager.is_available
         if not self.ffmpeg_available:
-            user_confirmed = self.ui_manager.show_ffmpeg_download_dialog()
+            missing_files = self.ffmpeg_manager._get_missing_files()
+            # Extract just the filenames for display
+            missing_filenames = [os.path.basename(file_path) for file_path in missing_files]
+            user_confirmed = self.ui_manager.show_ffmpeg_download_dialog(missing_files=missing_filenames)
             if user_confirmed:
                 self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status)
             else:
@@ -63,7 +66,7 @@ class Main(BaseWindow):
 
     def on_closing(self) -> None:
         """Handle application close event."""
-        self.quit()
+        self.destroy()
 
 
 def main():

@@ -62,16 +62,18 @@ class UIManager:
         self.app.notebook = notebook
 
 
-    def show_ffmpeg_download_dialog(self) -> bool:
+    def show_ffmpeg_download_dialog(self, missing_files: list) -> bool:
         """
         Show a dialog asking user if they want to download FFmpeg.
 
         Returns:
             bool: True if user confirms download, False if they cancel
         """
+        files_list = "\n".join(missing_files)
         result = messagebox.askokcancel(
             "FFmpeg Required",
-            "FFmpeg is required for video processing but was not found on your system.\n\n"
+            f"FFmpeg is required for video processing but was not found on your system.\n\n"
+            f"The following files are missing:\n{files_list}\n\n"
             "Press OK to download and install FFmpeg locally.\n"
             "(This will download approximately ~80MB)",
             icon="question"
