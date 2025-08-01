@@ -1,15 +1,18 @@
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from app import Main
+# GUI imports
+import tkinter as tk
+from tkinter import messagebox
 
+# Local imports
 from .main_window import MainWindow
 from .menu_bar import MenuBar
 from .selection_tab import SelectionTab
 from .settings_tab import SettingsTab
 from .status_bar import StatusBar
 
-import tkinter as tk
-from tkinter import messagebox
+# Type hinting
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app import Main
 
 
 class UIManager:
@@ -72,10 +75,23 @@ class UIManager:
         files_list = "\n".join(missing_files)
         result = messagebox.askokcancel(
             "FFmpeg Required",
-            f"FFmpeg is required for video processing but was not found on your system.\n\n"
-            f"The following files are missing:\n{files_list}\n\n"
-            "Press OK to download and install FFmpeg locally.\n"
-            "(This will download approximately ~80MB)",
+            f"FFmpeg is needed for video processing.\n\nMissing files:\n{files_list}\n\n"
+            "Press OK to download (~80MB), or Cancel to exit.\n\n"
+            "You can also manually add 'ffmpeg-6.0-essentials' executables to './bin/ffmpeg'",
             icon="question"
         )
         return result
+
+
+    def set_state(self, state: str):
+        """Set the state of all UI components.
+
+        Args:
+            state: 'normal' or 'disabled'
+        """
+        if self.menubar:
+            self.menubar.set_state(state)
+        if self.selection_tab:
+            self.selection_tab.set_state(state)
+        if self.settings_tab:
+            self.settings_tab.set_state(state)

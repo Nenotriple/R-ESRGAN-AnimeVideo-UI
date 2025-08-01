@@ -1,12 +1,17 @@
+# Standard library imports
 import os
+
+# GUI imports
 from tkinter import ttk
 import tkinter as tk
 
+# Local imports
+from utils.drag_drop_widget import DragDropWidget
+
+# Type hinting
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
-
-from utils.drag_drop_widget import DragDropWidget
 
 
 class SelectionTab:
@@ -26,8 +31,10 @@ class SelectionTab:
 
 
     def _create_content(self):
-        title_label = ttk.Label(self.frame, text="Video Selection", font=('Arial', 14, 'bold'))
-        title_label.grid(row=0, column=0, pady=(10, 5), sticky=(tk.W, tk.E))
+        # Title
+        self.title_label = ttk.Label(self.frame, text="Video Selection", font=('Arial', 14, 'bold'))
+        self.title_label.grid(row=0, column=0, pady=(10, 5), sticky=(tk.W, tk.E))
+        # Drop target
         self.drag_drop_widget = DragDropWidget(
             self.frame,
             on_drop=self._on_file_dropped,
@@ -36,7 +43,8 @@ class SelectionTab:
             success_text="✓ Video file loaded!\nDrop another file here"
         )
         self.drag_drop_widget.grid(row=1, column=0, padx=20, pady=10, sticky=(tk.W, tk.E, tk.N, tk.S))
-        self.file_info_label = ttk.Label(self.frame, text="No file selected", foreground="gray")
+        # File info
+        self.file_info_label = ttk.Label(self.frame, text="No file selected")
         self.file_info_label.grid(row=2, column=0, pady=(0, 10), sticky=(tk.W, tk.E))
 
 
@@ -45,6 +53,17 @@ class SelectionTab:
         file_info = self.drag_drop_widget.get_file_info(file_path)
         if file_info:
             info_text = f"Selected: {file_info['name']} ({file_info['size_str']})"
-            self.file_info_label.config(text=info_text, foreground="black")
+            self.file_info_label.config(text=info_text)
         else:
-            self.file_info_label.config(text="Error reading file info", foreground="red")
+            self.file_info_label.config(text="Error reading file info")
+
+
+    def set_state(self, state: str):
+        """Set the state of selection tab widgets.
+
+        Args:
+            state: 'normal' or 'disabled'
+        """
+        self.drag_drop_widget.set_state(state)
+        self.title_label.config(state=state)
+        self.file_info_label.config(state=state)

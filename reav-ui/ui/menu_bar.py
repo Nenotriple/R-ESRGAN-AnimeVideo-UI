@@ -1,8 +1,11 @@
+# GUI imports
 import tkinter as tk
 
+# Type hinting
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
+
 
 class MenuBar:
     """Manages the application menu bar."""
@@ -67,3 +70,22 @@ class MenuBar:
 
     def _on_about(self):
         pass
+
+
+    def set_state(self, state: str):
+        """Set the state of menu bar items.
+
+        Args:
+            state: 'normal' or 'disabled'
+        """
+        for i in range(self.menubar.index('end') + 1):
+            try:
+                menu_label = self.menubar.entrycget(i, 'label')
+                submenu = self.menubar.nametowidget(self.menubar.entrycget(i, 'menu'))
+                for j in range(submenu.index('end') + 1):
+                    try:
+                        submenu.entryconfig(j, state=state)
+                    except (tk.TclError, AttributeError):
+                        pass
+            except (tk.TclError, AttributeError):
+                pass

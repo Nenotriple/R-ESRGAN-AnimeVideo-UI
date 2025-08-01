@@ -1,5 +1,8 @@
+# Standard library imports
 import zipfile
 from pathlib import Path
+
+# Type hinting
 from typing import Optional, Callable, List
 
 

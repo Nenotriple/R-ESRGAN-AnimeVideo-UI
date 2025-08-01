@@ -45,11 +45,12 @@ class Main(BaseWindow):
         self.ffmpeg_available = self.ffmpeg_manager.is_available
         if not self.ffmpeg_available:
             missing_files = self.ffmpeg_manager._get_missing_files()
-            # Extract just the filenames for display
             missing_filenames = [os.path.basename(file_path) for file_path in missing_files]
             user_confirmed = self.ui_manager.show_ffmpeg_download_dialog(missing_files=missing_filenames)
             if user_confirmed:
+                self.ui_manager.set_state("disabled")
                 self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status)
+                self.ui_manager.set_state("normal")
             else:
                 self.on_closing()
 

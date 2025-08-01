@@ -1,5 +1,5 @@
 """
-Reusable Tkinter Drag-and-Drop Widget Module
+Tkinter Drag-and-Drop Widget Module
 
 A self-contained drag-and-drop widget that inherits from ttk.Label
 With callbacks for file drop, drag enter, and drag leave events.
@@ -14,13 +14,15 @@ Usage:
     widget.pack()
 """
 
+# Standard library imports
+import os
 
+# GUI imports
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
-import os
 
-
+# Third-party imports
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 

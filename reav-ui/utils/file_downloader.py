@@ -1,9 +1,12 @@
+# Standard library imports
 import urllib.request
 from pathlib import Path
+
+# Type hinting
 from typing import Optional, Callable
 
 
-def _print_progress(downloaded, total_size):
+def _print_progress(downloaded: int, total_size: int):
     percent = downloaded * 100 // total_size if total_size else 0
     print(f"\rDownloaded {percent}% - {downloaded} of {total_size} bytes", end="", flush=True)
 

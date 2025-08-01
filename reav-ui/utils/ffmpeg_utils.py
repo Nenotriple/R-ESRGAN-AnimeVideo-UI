@@ -1,15 +1,18 @@
+# Standard library imports
 import os
 import shutil
 import threading
 from pathlib import Path
-from typing import Optional, Callable, List
 
+# Local imports
+from .file_downloader import download_file
+from .zip_utils import extract_zip
+
+# Type hinting
+from typing import Optional, Callable, List
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
-
-from .file_downloader import download_file
-from .zip_utils import extract_zip
 
 
 class FFmpegManager:

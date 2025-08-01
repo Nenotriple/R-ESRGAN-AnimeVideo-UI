@@ -1,9 +1,12 @@
+# GUI imports
 from tkinter import ttk
 import tkinter as tk
 
+# Type hinting
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
+
 
 class StatusBar:
     """Manages the status bar at the bottom of the interface."""
@@ -14,11 +17,18 @@ class StatusBar:
 
 
     def create(self, parent_frame: ttk.Frame):
-        self.label = ttk.Label(parent_frame, textvariable=self.app.status_var)
-        self.label.grid(row=2, column=0, sticky=(tk.W, tk.E))
-
-        self.progress_bar = ttk.Progressbar(parent_frame, mode='determinate', variable=self.app.status_progress_var)
-        self.progress_bar.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(5, 0))
+        # frame
+        status_frame = ttk.Frame(parent_frame)
+        status_frame.grid(row=2, column=0, sticky=(tk.W, tk.E))
+        # label
+        self.label = ttk.Label(status_frame, textvariable=self.app.status_var)
+        self.label.grid(row=0, column=0, sticky=(tk.W, tk.E))
+        # progress
+        self.progress_bar = ttk.Progressbar(status_frame, variable=self.app.status_progress_var, length=200)
+        self.progress_bar.grid(row=0, column=1, sticky=tk.E)
+        # Configure weights
+        status_frame.grid_columnconfigure(0, weight=1)
+        status_frame.grid_columnconfigure(1, weight=2)
 
 
     def update_progress(self, downloaded: int, total_size: int):
@@ -36,3 +46,13 @@ class StatusBar:
     def update_status(self, message: str):
         """Update status with a text message."""
         self.app.status_var.set(message)
+
+
+    def set_state(self, state: str):
+        """Set the state of status bar widgets.
+
+        Args:
+            state: 'normal' or 'disabled'
+        """
+        self.label.config(state=state)
+        self.progress_bar.config(state=state)

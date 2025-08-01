@@ -1,9 +1,12 @@
+# Standard library imports
 import ctypes
 import os
 
+# Type hinting
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
+
 
 class MainWindow:
     """Manages the main application window configuration."""
