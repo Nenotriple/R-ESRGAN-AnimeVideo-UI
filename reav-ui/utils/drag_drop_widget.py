@@ -2,7 +2,7 @@
 Reusable Tkinter Drag-and-Drop Widget Module
 
 A self-contained drag-and-drop widget that inherits from ttk.Label
-and can be easily integrated into any Tkinter application.
+With callbacks for file drop, drag enter, and drag leave events.
 
 Usage:
     from drag_drop_widget import DragDropWidget
@@ -37,6 +37,7 @@ class DragDropWidget(tk.Label):
         drop_text: Text to display during drag operation
         success_text: Text to display after successful drop
         browse_dialog: Whether to enable click-to-browse functionality
+        state: Initial state of the widget ('normal' or 'disabled')
         **kwargs: Additional arguments passed to tk.Label
     """
 
@@ -44,7 +45,7 @@ class DragDropWidget(tk.Label):
                  text="📁 Drop files here\n(or click to browse)",
                  drop_text="📂 Release to drop file here",
                  success_text="✓ File received!\nDrop another file here",
-                 browse_dialog=True, **kwargs):
+                 browse_dialog=True, state='normal', **kwargs):
         # Default styling
         default_kwargs = {
             'bg': '#f0f0f0',
@@ -54,7 +55,7 @@ class DragDropWidget(tk.Label):
             'bd': 3,
             'width': 50,
             'height': 10,
-            'cursor': 'hand2' if browse_dialog else 'arrow'
+            'cursor': 'hand2' if browse_dialog and state == 'normal' else 'arrow'
         }
         # Merge user kwargs with defaults
         default_kwargs.update(kwargs)
@@ -67,25 +68,29 @@ class DragDropWidget(tk.Label):
         self.drop_text = drop_text
         self.success_text = success_text
         self.browse_dialog = browse_dialog
+        self.state = state
         self.setup_drag_drop()
         # Setup click to browse if enabled
-        if self.browse_dialog:
+        if self.browse_dialog and self.state == 'normal':
             self.bind("<Button-1>", self.open_file_dialog)
 
 
     def setup_drag_drop(self):
         """Set up drag and drop using tkinterdnd2 if available"""
         try:
-            self.drop_target_register(DND_FILES)
-            self.dnd_bind('<<Drop>>', self.on_drop)
-            self.dnd_bind('<<DragEnter>>', self.on_drag_enter)
-            self.dnd_bind('<<DragLeave>>', self.on_drag_leave)
+            if self.state == 'normal':
+                self.drop_target_register(DND_FILES)
+                self.dnd_bind('<<Drop>>', self.on_drop)
+                self.dnd_bind('<<DragEnter>>', self.on_drag_enter)
+                self.dnd_bind('<<DragLeave>>', self.on_drag_leave)
         except Exception as e:
             print(f"Warning: Could not setup drag and drop: {e}")
 
 
     def on_drop(self, event):
         """Handle file drop event"""
+        if self.state == 'disabled':
+            return
         try:
             # Get the root window to access tk methods
             root = self.winfo_toplevel()
@@ -103,6 +108,8 @@ class DragDropWidget(tk.Label):
 
     def on_drag_enter(self, event):
         """Handle drag enter event"""
+        if self.state == 'disabled':
+            return
         self.config(bg="#cce7ff", text=self.drop_text)
         if self.on_drag_enter_callback:
             self.on_drag_enter_callback(event)
@@ -110,6 +117,8 @@ class DragDropWidget(tk.Label):
 
     def on_drag_leave(self, event):
         """Handle drag leave event"""
+        if self.state == 'disabled':
+            return
         self.reset_appearance()
         if self.on_drag_leave_callback:
             self.on_drag_leave_callback(event)
@@ -128,7 +137,7 @@ class DragDropWidget(tk.Label):
 
     def open_file_dialog(self, event):
         """Open file dialog when clicking the widget"""
-        if not self.browse_dialog:
+        if not self.browse_dialog or self.state == 'disabled':
             return
         file_path = filedialog.askopenfilename(
             title="Select a file",
@@ -150,6 +159,36 @@ class DragDropWidget(tk.Label):
     def set_on_drop_callback(self, callback):
         """Set or change the on_drop callback function"""
         self.on_drop_callback = callback
+
+
+    def set_state(self, state):
+        """Set the widget state to 'normal' or 'disabled'"""
+        if state not in ('normal', 'disabled'):
+            raise ValueError("State must be 'normal' or 'disabled'")
+        old_state = self.state
+        self.state = state
+        if state == 'disabled':
+            # Disable appearance
+            self.config(bg="#e0e0e0", fg="#888888", cursor="arrow")
+            # Remove event bindings
+            self.unbind("<Button-1>")
+            try:
+                self.drop_target_unregister()
+            except:
+                pass
+        elif state == 'normal' and old_state == 'disabled':
+            # Restore normal appearance
+            self.reset_appearance()
+            self.config(cursor='hand2' if self.browse_dialog else 'arrow')
+            # Restore event bindings
+            if self.browse_dialog:
+                self.bind("<Button-1>", self.open_file_dialog)
+            self.setup_drag_drop()
+
+
+    def get_state(self):
+        """Get the current widget state"""
+        return self.state
 
 
     def get_file_info(self, file_path):
