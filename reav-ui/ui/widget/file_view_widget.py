@@ -12,7 +12,9 @@ from tkinter import ttk, messagebox, filedialog
 from tkinterdnd2 import DND_FILES
 
 # Type hinting
-from typing import List, Dict, Any, Optional
+from typing import TYPE_CHECKING, List, Dict, Any, Optional
+if TYPE_CHECKING:
+    from app import Main
 
 
 #endregion
@@ -22,8 +24,11 @@ from typing import List, Dict, Any, Optional
 class FileViewWidget(ttk.Frame):
     """Custom Treeview widget for displaying video/image file information."""
 
-    def __init__(self, parent, **kwargs):
+    def __init__(self, app: "Main", parent, **kwargs):
         super().__init__(parent, **kwargs)
+        self.app = app
+        self.supported_image_types = self.app.supported_image_types
+        self.supported_video_types = self.app.supported_video_types
         # Column definitions
         self.columns = {
             'index': {'text': '#', 'width': 30, 'anchor': 'center', 'stretch': False},
@@ -118,13 +123,12 @@ class FileViewWidget(ttk.Frame):
 
     def add_file(self, file_data: Dict[str, Any], index: Optional[int] = None):
         """
-        Add a single file to the treeview.
-
-        Args:
-            file_data: Dictionary with keys: 'name', 'size', 'length', 'orig_dim', 'scale', 'new_dim', 'path'
-            index: Optional index for the file, used for the index column
+        Add a single file to the treeview, only if it matches supported types.
         """
-        if self._is_duplicate(file_data.get('path', '')):
+        file_path = file_data.get('path', '')
+        if not self._is_supported_filetype(file_path):
+            return
+        if self._is_duplicate(file_path):
             return
         values = [
             str(index) if index is not None else '',  # index column
@@ -173,6 +177,12 @@ class FileViewWidget(ttk.Frame):
     def _is_duplicate(self, path: str) -> bool:
         """Check if a file path already exists in the treeview."""
         return path in {self.tree.set(item, 'path') for item in self.tree.get_children()}
+
+
+    def _is_supported_filetype(self, file_path: str) -> bool:
+        """Check if the file type is supported."""
+        ext = os.path.splitext(file_path)[1].lower()
+        return ext in self.supported_image_types or ext in self.supported_video_types
 
 
     #endregion
@@ -324,6 +334,8 @@ class FileViewWidget(ttk.Frame):
         if not file_paths:
             return
         for file_path in file_paths:
+            if not self._is_supported_filetype(file_path):
+                continue
             if not self._is_duplicate(file_path) and os.path.isfile(file_path):
                 file_info = self._get_file_info(file_path)
                 if file_info:
@@ -360,6 +372,8 @@ class FileViewWidget(ttk.Frame):
             files = [event.data]
         for file_path in files:
             file_path = file_path.strip('"')
+            if not self._is_supported_filetype(file_path):
+                continue
             if os.path.isfile(file_path) and not self._is_duplicate(file_path):
                 file_info = self._get_file_info(file_path)
                 if file_info:

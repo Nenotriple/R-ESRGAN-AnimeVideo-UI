@@ -37,7 +37,7 @@ class SelectionTab:
         self.selection_labelframe.grid_rowconfigure(0, weight=1)
         self.selection_labelframe.grid_columnconfigure(0, weight=1)
         # File view widget
-        self.file_view_widget = FileViewWidget(self.selection_labelframe)
+        self.file_view_widget = FileViewWidget(self.app, self.selection_labelframe)
         self.file_view_widget.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=5, pady=5)
         self.file_view_widget.bind_selection_event(self._on_selection_changed)
         # File info
