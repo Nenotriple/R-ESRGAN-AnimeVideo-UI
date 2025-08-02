@@ -1,86 +1,42 @@
 # Standard library imports
 import os
-import shutil
 import threading
 from pathlib import Path
+from typing import Optional, Callable, List
 
 # Local imports
 from .file_downloader import download_file
 from .zip_utils import extract_zip
 
 # Type hinting
-from typing import TYPE_CHECKING, Optional, Callable, List
+from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app import Main
+    from .ffmpeg_setup import FFmpegSetup
 
 
-#endregion
-#region FFMPEGManager
+#region FFmpegDownloader
 
 
-class FFmpegManager:
-    """Manager class for FFmpeg operations and installation."""
+class FFmpegDownloader:
+    """Handles FFmpeg download and extraction operations."""
 
 
-    # Class constants for better maintainability
     FFMPEG_DOWNLOAD_URL = "https://github.com/GyanD/codexffmpeg/releases/download/6.0/ffmpeg-6.0-essentials_build.zip"
     FFMPEG_ZIP_NAME = "ffmpeg-6.0-essentials_build.zip"
-    FFMPEG_BUILD_PREFIX = "ffmpeg-6.0-essentials_build"
 
 
-    def __init__(self, app: "Main"):
+    def __init__(self, app: "Main", ffmpeg_setup: "FFmpegSetup"):
         self.app = app
-        self.app_path = self.app.app_path
-        self._init_paths()
-        self.is_available = self._check_availability()
+        self.ffmpeg_setup = ffmpeg_setup
         self._download_thread = None
 
 
-    def _init_paths(self) -> None:
-        """Initialize all file paths used by FFmpeg."""
-        self.ffmpeg_dir = os.path.join(self.app_path, "bin", "ffmpeg")
-        self.ffmpeg_exe = os.path.join(self.ffmpeg_dir, "ffmpeg.exe")
-        self.ffprobe_exe = os.path.join(self.ffmpeg_dir, "ffprobe.exe")
-        self.ffplay_exe = os.path.join(self.ffmpeg_dir, "ffplay.exe")
-        self.license_file = os.path.join(self.ffmpeg_dir, "LICENSE")
+#endregion
+#region Utility
 
 
-    def _check_local_installation(self) -> bool:
-        """Check if FFmpeg files exist locally."""
-        return os.path.exists(self.ffmpeg_exe) and os.path.exists(self.ffprobe_exe)
-
-
-    def _check_system_installation(self) -> bool:
-        """Check if FFmpeg is available in system PATH."""
-        return shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
-
-
-    def _check_availability(self) -> bool:
-        """Check if FFmpeg is available in the bin directory or system PATH."""
-        return self._check_local_installation() or self._check_system_installation()
-
-
-#region Download Utility
-
-
-    def _get_file_mapping(self) -> dict[str, str]:
-        """Get mapping of zip paths to local paths for FFmpeg files."""
-        return {
-            f"{self.FFMPEG_BUILD_PREFIX}/bin/ffmpeg.exe": self.ffmpeg_exe,
-            f"{self.FFMPEG_BUILD_PREFIX}/bin/ffprobe.exe": self.ffprobe_exe,
-            f"{self.FFMPEG_BUILD_PREFIX}/bin/ffplay.exe": self.ffplay_exe,
-            f"{self.FFMPEG_BUILD_PREFIX}/LICENSE": self.license_file
-        }
-
-
-    def _get_missing_files(self) -> List[str]:
-        """Get list of missing FFmpeg files that need to be installed."""
-        file_mapping = self._get_file_mapping()
-        return [zip_path for zip_path, local_path in file_mapping.items()
-                if not os.path.exists(local_path)]
-
-
-    def _is_download_in_progress(self) -> bool:
+    def is_download_in_progress(self) -> bool:
         """Check if a download is already in progress."""
         return self._download_thread and self._download_thread.is_alive()
 
@@ -112,7 +68,7 @@ class FFmpegManager:
         """Perform the extraction operation."""
         return extract_zip(
             temp_zip_path,
-            self.ffmpeg_dir,
+            self.ffmpeg_setup.ffmpeg_dir,
             missing_files,
             delete_after_extract=True,
             progress_callback=lambda f: safe_callback(f"Extracting: {Path(f).name}")
@@ -135,15 +91,16 @@ class FFmpegManager:
 
     def _download_and_install_thread(self, progress_callback: Optional[Callable[[str], None]] = None, completion_callback: Optional[Callable[[str], None]] = None) -> None:
         """Method to download and install FFmpeg."""
-        temp_zip_path = os.path.join(self.app_path, f"bin/ffmpeg/{self.FFMPEG_ZIP_NAME}")
+        temp_zip_path = os.path.join(self.ffmpeg_setup.ffmpeg_dir, self.FFMPEG_ZIP_NAME)
         safe_callback = self._create_thread_safe_callback(progress_callback)
         safe_completion_callback = self._create_thread_safe_callback(completion_callback)
         try:
             # Create directories and check for missing files
-            os.makedirs(self.ffmpeg_dir, exist_ok=True)
-            missing_files = self._get_missing_files()
+            self.ffmpeg_setup.ensure_ffmpeg_directory()
+            missing_files = self.ffmpeg_setup.get_missing_files()
             if not missing_files:
-                self.is_available = True
+                safe_callback("All FFmpeg files are already present")
+                safe_completion_callback("FFmpeg installation already complete")
                 return
             # Download
             safe_callback(f"Missing {len(missing_files)} FFmpeg files. Downloading...")
@@ -156,9 +113,8 @@ class FFmpegManager:
                 safe_callback("Failed to extract FFmpeg")
                 return
             # Verification
-            self.is_available = self._check_availability()
             completion_message = "FFmpeg installation completed successfully!"
-            if self.is_available:
+            if self.ffmpeg_setup.is_available():
                 safe_callback(completion_message)
                 safe_completion_callback(completion_message)
             else:
@@ -171,42 +127,24 @@ class FFmpegManager:
 
 
 #endregion
-#region Download Process
+#region Process
 
 
-    def download_and_install_ffmpeg(self, progress_callback: Optional[Callable[[str], None]] = None, completion_callback: Optional[Callable[[str], None]] = None) -> None:
+    def download_and_install(self, progress_callback: Optional[Callable[[str], None]] = None, completion_callback: Optional[Callable[[str], None]] = None) -> None:
         """Download and install FFmpeg to the bin/ffmpeg directory.
+
         Args:
             progress_callback: Optional callback for progress updates
             completion_callback: Optional callback called when download/extract is finished
+
         Note:
             This method starts a background thread and returns immediately.
             Use the progress_callback to receive status updates.
         """
-        if self._is_download_in_progress():
+        if self.is_download_in_progress():
             if progress_callback:
                 progress_callback("Download already in progress...")
             return
+
         self._download_thread = threading.Thread(target=self._download_and_install_thread, args=(progress_callback, completion_callback), daemon=True)
         self._download_thread.start()
-
-
-#endregion
-#region FFmpeg Utility
-
-
-    def _get_executable_path(self, local_exe_path: str, exe_name: str) -> Optional[str]:
-        """Get the path to an executable, checking local installation first."""
-        if os.path.exists(local_exe_path):
-            return local_exe_path
-        return shutil.which(exe_name)
-
-
-    def get_ffmpeg_path(self) -> Optional[str]:
-        """Get the path to the FFmpeg executable."""
-        return self._get_executable_path(self.ffmpeg_exe, "ffmpeg")
-
-
-    def get_ffprobe_path(self) -> Optional[str]:
-        """Get the path to the FFprobe executable."""
-        return self._get_executable_path(self.ffprobe_exe, "ffprobe")

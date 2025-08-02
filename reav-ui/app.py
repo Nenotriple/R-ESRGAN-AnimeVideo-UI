@@ -45,19 +45,18 @@ class Main(BaseWindow):
     def init_ffmpeg(self):
         self.ffmpeg_manager = FFmpegManager(self)
         self.ffmpeg_available = self.ffmpeg_manager.is_available
+        # If not available, prompt for download
         if not self.ffmpeg_available:
-            missing_files = self.ffmpeg_manager._get_missing_files()
-            missing_filenames = [os.path.basename(file_path) for file_path in missing_files]
-            user_confirmed = self.ui_manager.show_ffmpeg_download_dialog(missing_files=missing_filenames)
+            missing_filenames = self.ffmpeg_manager.setup.get_missing_filenames()
+            user_confirmed = self.ffmpeg_manager.setup.show_ffmpeg_download_dialog(missing_files=missing_filenames)
             if user_confirmed:
                 self.ui_manager.set_state("disabled")
 
-                def on_ffmpeg_download_complete(msg: str):
-                    # Called after download/extract
+                def completion_callback(msg: str):
                     if self.ffmpeg_manager.is_available:
                         self.ui_manager.set_state("normal")
 
-                self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status, completion_callback=on_ffmpeg_download_complete)
+                self.ffmpeg_manager.download_and_install_ffmpeg(progress_callback=self.ui_manager.status_bar.update_status, completion_callback=completion_callback)
             else:
                 self.on_closing()
 

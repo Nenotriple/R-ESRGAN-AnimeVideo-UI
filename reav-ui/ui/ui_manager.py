@@ -65,24 +65,6 @@ class UIManager:
         self.app.notebook = notebook
 
 
-    def show_ffmpeg_download_dialog(self, missing_files: list) -> bool:
-        """
-        Show a dialog asking user if they want to download FFmpeg.
-
-        Returns:
-            bool: True if user confirms download, False if they cancel
-        """
-        files_list = "\n".join(missing_files)
-        result = messagebox.askokcancel(
-            "FFmpeg Required",
-            f"FFmpeg is needed for video processing.\n\nMissing files:\n{files_list}\n\n"
-            "Press OK to download (~80MB), or Cancel to exit.\n\n"
-            "You can also manually add 'ffmpeg-6.0-essentials' executables to './bin/ffmpeg'",
-            icon="question"
-        )
-        return result
-
-
     def set_state(self, state: str):
         """Set the state of all UI components.
 
