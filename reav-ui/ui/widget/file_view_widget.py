@@ -1,15 +1,15 @@
 #region Imports
 
+
 # Standard library imports
 import os
-import subprocess
 
 # GUI imports
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 
-# Third-party imports
-from tkinterdnd2 import DND_FILES, TkinterDnD
+# Drag and Drop
+from tkinterdnd2 import DND_FILES
 
 # Type hinting
 from typing import List, Dict, Any, Optional
@@ -124,9 +124,7 @@ class FileViewWidget(ttk.Frame):
             file_data: Dictionary with keys: 'name', 'size', 'length', 'orig_dim', 'scale', 'new_dim', 'path'
             index: Optional index for the file, used for the index column
         """
-        # Prevent duplicates by checking if path already exists
-        existing_paths = {self.tree.set(item, 'path') for item in self.tree.get_children()}
-        if file_data.get('path', '') in existing_paths:
+        if self._is_duplicate(file_data.get('path', '')):
             return
         values = [
             str(index) if index is not None else '',  # index column
@@ -172,6 +170,11 @@ class FileViewWidget(ttk.Frame):
         return files
 
 
+    def _is_duplicate(self, path: str) -> bool:
+        """Check if a file path already exists in the treeview."""
+        return path in {self.tree.set(item, 'path') for item in self.tree.get_children()}
+
+
     #endregion
     #region Sorting
 
@@ -205,9 +208,7 @@ class FileViewWidget(ttk.Frame):
 
         def parse_length(s):
             try:
-                # Assume format "mm:ss" or "hh:mm:ss"
-                parts = s.split(':')
-                parts = [int(p) for p in parts]
+                parts = [int(p) for p in s.split(':')]
                 if len(parts) == 3:
                     return parts[0]*3600 + parts[1]*60 + parts[2]
                 elif len(parts) == 2:
@@ -218,16 +219,16 @@ class FileViewWidget(ttk.Frame):
                 return 0
 
         items = [(self.tree.set(k, col_id), k) for k in self.tree.get_children('')]
-        if col_id == 'size':
-            items.sort(key=lambda t: parse_size(t[0]), reverse=self._sort_column == col_id and not self._sort_reverse)
-        elif col_id in ('orig_dim', 'new_dim'):
-            items.sort(key=lambda t: parse_dim(t[0]), reverse=self._sort_column == col_id and not self._sort_reverse)
-        elif col_id == 'scale':
-            items.sort(key=lambda t: parse_scale(t[0]), reverse=self._sort_column == col_id and not self._sort_reverse)
-        elif col_id == 'length':
-            items.sort(key=lambda t: parse_length(t[0]), reverse=self._sort_column == col_id and not self._sort_reverse)
-        else:
-            items.sort(key=lambda t: t[0], reverse=self._sort_column == col_id and not self._sort_reverse)
+        key_funcs = {
+            'size': parse_size,
+            'orig_dim': parse_dim,
+            'new_dim': parse_dim,
+            'scale': parse_scale,
+            'length': parse_length
+        }
+        key_func = key_funcs.get(col_id, lambda x: x)
+        reverse = self._sort_column == col_id and not self._sort_reverse
+        items.sort(key=lambda t: key_func(t[0]), reverse=reverse)
         # Rearrange items in treeview
         for index, (_, k) in enumerate(items):
             self.tree.move(k, '', index)
@@ -284,10 +285,7 @@ class FileViewWidget(ttk.Frame):
 
     def _reveal_in_explorer(self):
         """Reveal selected file in file explorer."""
-        selected_files = self.get_selected_files()
-        if not selected_files:
-            return
-        for file_data in selected_files:
+        for file_data in self.get_selected_files():
             file_path = file_data.get('path', '')
             if file_path and os.path.exists(file_path):
                 try:
@@ -300,10 +298,7 @@ class FileViewWidget(ttk.Frame):
 
     def _open_in_default_app(self):
         """Open selected file in default application."""
-        selected_files = self.get_selected_files()
-        if not selected_files:
-            return
-        for file_data in selected_files:
+        for file_data in self.get_selected_files():
             file_path = file_data.get('path', '')
             if file_path and os.path.exists(file_path):
                 try:
@@ -317,12 +312,8 @@ class FileViewWidget(ttk.Frame):
     def _remove_from_list(self):
         """Remove selected files from the list."""
         selected_items = self.tree.selection()
-        if not selected_items:
-            return
-        # Delete selected items
         for item in selected_items:
             self.tree.delete(item)
-        # Update index numbers for remaining items
         for idx, item in enumerate(self.tree.get_children(''), start=1):
             self.tree.set(item, 'index', str(idx))
 
@@ -332,10 +323,8 @@ class FileViewWidget(ttk.Frame):
         file_paths = filedialog.askopenfilenames(title="Select Files")
         if not file_paths:
             return
-        # Get existing paths to prevent duplicates
-        existing_paths = {self.tree.set(item, 'path') for item in self.tree.get_children()}
         for file_path in file_paths:
-            if file_path not in existing_paths and os.path.isfile(file_path):
+            if not self._is_duplicate(file_path) and os.path.isfile(file_path):
                 file_info = self._get_file_info(file_path)
                 if file_info:
                     self.add_file(file_info, index=len(self.tree.get_children()) + 1)
@@ -369,11 +358,9 @@ class FileViewWidget(ttk.Frame):
             files = root.tk.splitlist(event.data)
         except Exception:
             files = [event.data]
-        # Get existing paths to prevent duplicates
-        existing_paths = {self.tree.set(item, 'path') for item in self.tree.get_children()}
         for file_path in files:
             file_path = file_path.strip('"')
-            if os.path.isfile(file_path) and file_path not in existing_paths:
+            if os.path.isfile(file_path) and not self._is_duplicate(file_path):
                 file_info = self._get_file_info(file_path)
                 if file_info:
                     self.add_file(file_info, index=len(self.tree.get_children()) + 1)
@@ -385,11 +372,10 @@ class FileViewWidget(ttk.Frame):
             name = os.path.basename(file_path)
             size_bytes = os.path.getsize(file_path)
             size_str = self._format_file_size(size_bytes)
-            # Dummy values for length, orig_dim, scale, new_dim for images/videos
             ext = os.path.splitext(name)[1].lower()
             if ext in ['.mp4', '.avi', '.mov', '.mkv']:
-                length = "..."  # Could use ffprobe for actual length
-                orig_dim = "..."  # Could use ffprobe for actual dimensions
+                length = "..."
+                orig_dim = "..."
             else:
                 length = "..."
                 orig_dim = "..."
