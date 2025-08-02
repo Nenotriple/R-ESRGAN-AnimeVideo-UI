@@ -1,14 +1,20 @@
 # R-ESRGAN-AnimeVideo-UI (reav-ui)
 
-## 📝 Usage
+The **v2_dev branch** is not quite ready yet and is missing many core features. Please use the main branch for now.
 
-## 🤷 Why?
+This will be a complete re-write and will take some time to complete.
 
-## 🚩 Requirements
+## 📦 Installation
 
 Built with Python 3.10.6
 
-## 📜 Version History
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/Nenotriple/R-ESRGAN-AnimeVideo-UI.git
+   ```
+
+2. Setup and launch the application with `Start.bat`
 
 ## 👥 **Credits**
 
