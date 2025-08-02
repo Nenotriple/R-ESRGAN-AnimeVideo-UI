@@ -12,8 +12,8 @@ from tkinterdnd2 import TkinterDnD
 BaseWindow = TkinterDnD.Tk
 
 # Local imports
-from utils.ffmpeg_utils import FFmpegManager
-from ui.ui_manager import UIManager
+from ui import UIManager
+from utils import FFmpegManager
 
 
 class Main(BaseWindow):
