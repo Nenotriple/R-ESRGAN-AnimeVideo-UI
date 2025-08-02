@@ -52,18 +52,3 @@ def download_file(url: str, output_path: str, chunk_size: int = 8192, progress_c
     # Download the file in chunks
     download_status = _download(url, output_path, chunk_size, progress_callback)
     return download_status
-
-
-
-## Example usage
-#if __name__ == "__main__":
-#    # Set URL and path
-#    test_url = "https://github.com/GyanD/codexffmpeg/releases/download/6.0/ffmpeg-6.0-essentials_build.zip"
-#    output_path = "downloads/ffmpeg-6.0-essentials_build.zip"
-#    # Download and return status
-#    success = download_file(test_url, output_path)
-#    # Print result
-#    if success:
-#        print(f"File downloaded to: {os.path.abspath(output_path)}")
-#    else:
-#        print("Download failed!")
