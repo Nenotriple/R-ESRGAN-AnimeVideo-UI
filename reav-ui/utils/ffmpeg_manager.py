@@ -4,6 +4,7 @@ from typing import Optional, Callable
 # Local imports
 from .ffmpeg_setup import FFmpegSetup
 from .ffmpeg_downloader import FFmpegDownloader
+from .ffmpeg_info import FFmpegInfo
 
 # Type hinting
 from typing import TYPE_CHECKING
@@ -22,6 +23,7 @@ class FFmpegManager:
         self.setup = FFmpegSetup(app)
         self.downloader = FFmpegDownloader(app, self.setup)
         self.is_available = self.setup.is_available()
+        self.ffmpeg_info = FFmpegInfo(app, self.setup.ffprobe_exe)
 
 
     def refresh_availability(self) -> bool:

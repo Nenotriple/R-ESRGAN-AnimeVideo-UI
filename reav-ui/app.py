@@ -25,6 +25,15 @@ class Main(BaseWindow):
         self.ui_manager.create_interface()
         self.ui_manager.setup_window()
         self.init_ffmpeg()
+        self.test_video_info()
+
+
+    def test_video_info(self):
+        """Test FFmpeg video info extraction."""
+        if self.ffmpeg_manager.is_available:
+            video_path = os.path.join(self.app_path, r"")
+            summary, summary_dict = self.ffmpeg_manager.ffmpeg_info.get_summary(video_path)
+            print(f"Video info: {summary}\n\n Summary Dict: {summary_dict}")
 
 
     def init_variables(self) -> None:
